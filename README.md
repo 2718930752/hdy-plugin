@@ -86,6 +86,8 @@ history/version chain, comparison, and token reporting are new in this repo.
 
 DSH (desktop or web profile) + Node.js 18+.
 
+Verified against DeepSeek Harness `0.2.1-rc.1` (desktop): the host routes, the `conversation.input.right` slot and the `llm` call path are unchanged from `0.2.0-rc.2`, so no plugin-side changes were needed for that update.
+
 The plugin is on npm as [`@benrong/dsh-prompt-polish`](https://www.npmjs.com/package/@benrong/dsh-prompt-polish), so on a CLI-managed profile (e.g. `web`) the stock command works:
 
 ```bash
