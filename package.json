@@ -1,6 +1,6 @@
 {
   "name": "@benrong/dsh-prompt-polish",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Prompt-polish button beside the composer model seat for DSH, porting linshenkx/prompt-optimizer's optimizationMode axis, mustache template engine, template registry and variable extraction.",
   "type": "module",
   "license": "AGPL-3.0-or-later",
@@ -57,5 +57,21 @@
     "README.md",
     "README.zh.md",
     "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benrong2048-boop/dsh-prompt-polish.git"
+  },
+  "homepage": "https://github.com/benrong2048-boop/dsh-prompt-polish#readme",
+  "bugs": {
+    "url": "https://github.com/benrong2048-boop/dsh-prompt-polish/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "prompt",
+    "prompt-engineering",
+    "prompt-optimizer",
+    "deepseek-harness"
   ]
 }
