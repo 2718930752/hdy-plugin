@@ -84,6 +84,8 @@
 
 ## 安装
 
+已在 DeepSeek Harness `0.2.1-rc.1`（桌面版）实测：宿主路由、`conversation.input.right` 插槽与 `llm` 调用路径都和 `0.2.0-rc.2` 一致，这次升级不需要改插件代码。
+
 需要 DSH（desktop 或 web profile）与 Node.js 18+。
 
 ```powershell
