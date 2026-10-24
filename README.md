@@ -86,7 +86,7 @@ history/version chain, comparison, and token reporting are new in this repo.
 
 DSH (desktop or web profile) + Node.js 18+.
 
-Verified against DeepSeek Harness `0.2.1-rc.1` (desktop): the host routes, the `conversation.input.right` slot and the `llm` call path are unchanged from `0.2.0-rc.2`, so no plugin-side changes were needed for that update.
+Verified against DeepSeek Harness `0.2.1-rc.3` (desktop): the host routes, the `conversation.input.right` slot and the `llm` call path have been unchanged across `0.2.0-rc.2` → `0.2.1-rc.3`, so no plugin-side changes were needed. `node compat.mjs` re-checks that contract against your installed build and exits non-zero if a future release breaks it.
 
 The plugin is on npm as [`@benrong/dsh-prompt-polish`](https://www.npmjs.com/package/@benrong/dsh-prompt-polish), so on a CLI-managed profile (e.g. `web`) the stock command works:
 
@@ -136,6 +136,7 @@ node smoke.mjs            # template layer (219)
 node contract.test.mjs    # browser half, real useEffect + fake streaming fetch (117)
 node host.test.mjs        # host half, three routes + failure paths (164)
 node compare-upstream.mjs # audit: template texts vs upstream (needs $env:UP=<upstream checkout>)
+node compat.mjs           # audit: the DSH API surface this plugin depends on (auto-detects the installed app)
 ```
 
 534 assertions, all green at publish time.
