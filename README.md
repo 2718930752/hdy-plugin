@@ -107,7 +107,7 @@ The plugin has two halves with different reload behaviour:
 | Change | How it applies |
 | --- | --- |
 | `lib/client.js` (button, panel, styles) | Save and it is live: DSH's built-in client-hmr polls the plugin's client bundle every 0.5 s and replaces that module in the browser — no restart, no page refresh |
-| Host code (`lib/host.js`, `lib/prompts.js`, `lib/processor.js`, …) | Save and it is live: `lib/index.js` is a shell that watches `host.js`, re-imports it at a new revision and swaps the child plugin, keeping the old one mounted if the new file fails |
+| Host code (`lib/host.js`, `lib/prompts.js`, `lib/processor.js`, the mustache engine, …) | Save and it is live: `lib/index.js` is a shell that watches `lib/*.js`, re-imports `host.js` at a new revision (which passes the revision to its own imports, so the whole host graph is fresh) and swaps the child plugin, keeping the old one mounted if the new graph fails |
 | The `lib/index.js` shell itself | Needs a host restart (a cached module cannot replace the shell that caches it) |
 
 To keep your working window undisturbed, develop against a separate instance:
@@ -116,7 +116,7 @@ To keep your working window undisturbed, develop against a separate instance:
 pwsh -File ./dev.ps1
 ```
 
-The menu starts/stops/restarts that instance (default `http://127.0.0.1:43121`, its own `hdy-dev` profile sharing the desktop's model credentials), runs the 534-assertion suite, and reports status. Host changes only restart the dev instance; the main window and its session are untouched. Direct actions: `dev.ps1 -Action start|stop|restart|test|status`.
+The menu starts/stops/restarts that instance (default `http://127.0.0.1:43121`, its own `hdy-dev` profile sharing the desktop's model credentials), runs the 534-assertion suite, and reports status. Only a change to the `lib/index.js` shell needs a restart; the main window and its session are untouched. Direct actions: `dev.ps1 -Action start|stop|restart|test|status`.
 
 ## Message layout and the context fork
 
@@ -133,7 +133,7 @@ Where the system prompt sits is configuration, not a constant. In the profile's 
 
 User-prompt mode forks the conversation first: the host reads that session's derived messages (a read-only snapshot), keeps the last 12 turns and at most 12,000 characters, and puts them before the draft. The result is still only written back to the composer — never to the session. The panel shows "上下文 N 条" when a snapshot was attached, and the reason when it was not.
 
-Configuration edits reload live; host code changes need the host process restarted — see the development section above.
+Configuration edits reload live; host implementations reload through the shell; only a change to `lib/index.js` itself needs a host restart — see the development section above.
 
 ## Tests
 

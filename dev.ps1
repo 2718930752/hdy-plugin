@@ -58,7 +58,7 @@ function Start-Instance {
   }
   @{ pid = $proc.Id; port = $Port; url = $url; startedAt = (Get-Date).ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
   Write-Host ("开发实例已启动: " + $url)
-  Write-Host '浏览器打开该地址即可调试；改 lib/client.js 保存后自动热更新，改宿主代码后回到本菜单重启开发实例。'
+  Write-Host '浏览器打开该地址即可调试；lib/client.js 保存后浏览器自动热更，lib/*.js 宿主实现保存后由外壳整组重载（仅 lib/index.js 外壳改动需重启）。'
 }
 function Invoke-Tests {
   foreach ($test in @('mustache.test.mjs','smoke.mjs','contract.test.mjs','host.test.mjs')) {
@@ -74,14 +74,14 @@ function Show-Status {
   if ($null -ne $state -and (Test-Alive ($state.port))) {
     Write-Host ("运行中: " + $state.url)
   } else { Write-Host '开发实例未运行。' }
-  Write-Host '客户端改动（lib/client.js）保存后自动热更新，不需要重启任何实例。'
+  Write-Host '客户端改动（lib/client.js）保存后自动热更新；宿主实现（lib/host.js、lib/prompts.js 等 lib/*.js）保存后由外壳整组重载；只有 lib/index.js 外壳本身改动需要重启开发实例。'
 }
 function Show-Menu {
   while ($true) {
     Write-Host ''
     Write-Host '1. 启动 / 打开开发实例（独立进程，不碰主窗口）'
     Write-Host '2. 停止开发实例'
-    Write-Host '3. 重启开发实例（宿主代码改完后用）'
+    Write-Host '3. 重启开发实例（仅 lib/index.js 外壳或依赖变化时用）'
     Write-Host '4. 跑全部测试（534 项）'
     Write-Host '5. 查看状态'
     Write-Host '6. 退出'

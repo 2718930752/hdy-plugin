@@ -103,7 +103,7 @@ pwsh -File ./install-plugin.ps1
 | 改动 | 生效方式 |
 | --- | --- |
 | `lib/client.js`（按钮、面板、样式） | 保存即生效：DSH 内置 client-hmr 每 0.5 秒检查一次插件客户端包，改动后浏览器自动替换该插件模块，不重启、不刷新 |
-| 宿主代码（`lib/host.js`、`lib/prompts.js`、`lib/processor.js` 等） | 保存即生效：`lib/index.js` 只是外壳，监听 `host.js` 并以新 revision 重新 import，新实现加载失败时保留旧的 |
+| 宿主代码（`lib/host.js`、`lib/prompts.js`、`lib/processor.js`、mustache 引擎等） | 保存即生效：`lib/index.js` 只是外壳，监听 `lib/*.js`，用新 revision 重新 import `host.js`（revision 会传给它的内部 import，整组宿主模块一起换新），加载失败时保留旧实现 |
 | `lib/index.js` 外壳本身 | 需要重启宿主（模块缓存里的外壳换不掉自己） |
 
 为了不打断正在使用的主窗口，开发时用独立实例：
@@ -129,7 +129,7 @@ pwsh -File ./dev.ps1
 
 「用户提示词」模式会先 fork 当前会话：宿主读取该会话的派生消息（只读快照），截取最近 12 条、最多 12000 字，放在草稿之前一起发给润色模型；结果仍然只写回输入框，不写回会话。面板底部会显示「上下文 N 条」，没有拿到会话时显示原因。
 
-改配置不需要重启应用（配置级热更新）；改 `lib/host.js` 这类宿主代码也不需要重启（外壳负责重新加载）；只有 `lib/index.js` 外壳本身变化时才需要重启宿主。
+改配置不需要重启应用（配置级热更新）；改 `lib/host.js` 这类宿主实现也不需要重启（外壳监听 `lib/*.js` 并整组重载）；只有 `lib/index.js` 外壳本身变化时才需要重启宿主。
 
 ## 测试
 
