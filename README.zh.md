@@ -133,6 +133,10 @@ pwsh -File ./dev.ps1
 
 改配置不需要重启应用（配置级热更新）；改 `lib/host.js` 这类宿主实现也不需要重启（外壳监听 `lib/*.js` 并整组重载）；只有 `lib/index.js` 外壳本身变化时才需要重启宿主。
 
+## 附：工作区隐藏（应用补丁）
+
+侧边栏工作区行菜单原本只有重命名/删除，也没有给插件留插槽，所以「隐藏工作区 / 查看已隐藏」改在应用自带的 `dsh-client-ui-workspace` 上，成品与安装、还原脚本都在 [patches/workspace-hide](./patches/workspace-hide/README.zh.md)。DSH 升级会覆盖该文件，届时重新运行 `patches/workspace-hide/apply.ps1`。
+
 ## 测试
 
 ```powershell

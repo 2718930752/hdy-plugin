@@ -137,6 +137,10 @@ User-prompt mode forks the conversation first: the host reads that session's der
 
 Configuration edits reload live; host implementations reload through the shell; only a change to `lib/index.js` itself needs a host restart — see the development section above.
 
+## Appendix: hiding workspaces (app patch)
+
+The sidebar's workspace menu only offered rename/delete and exposes no plugin slot, so "hide workspace / show hidden" is patched into the app's own `dsh-client-ui-workspace` bundle. The built bundle, installer and restore script live in [patches/workspace-hide](./patches/workspace-hide/README.zh.md). A DSH update overwrites that file — re-run `patches/workspace-hide/apply.ps1` afterwards.
+
 ## Tests
 
 ```powershell
