@@ -660,7 +660,7 @@ let crashed = null;
 try { resetHooks(); walk(Component({})); } catch (error) { crashed = error.message; }
 ok("tolerates absent input props without throwing", crashed === null, crashed);
 
-/* ---- composer pickers: both chosen means one click runs ------------------ */
+/* ---- composer pickers: one compact trigger, both chosen means one run ----- */
 localStorageStore.delete("dsh.prompt-polish/model");
 localStorageStore.delete("dsh.prompt-polish/effort");
 CATALOG.modes = OPTIMIZATION_MODES.slice();
@@ -668,14 +668,13 @@ rebuild();
 tree = render();
 await settle();
 tree = render();
-ok("the composer row carries one compact entry, not two open selects", byClass(tree, "pp-pick-btn").length === 1 && byClass(tree, "pp-pick").length === 0, JSON.stringify(byClass(tree, "pp-pick-btn").map((node) => node.children.join(""))));
-ok("the entry starts collapsed", byClass(tree, "pp-pop").length === 0);
-byClass(tree, "pp-pick-btn")[0].props.onClick();
+ok("the composer row carries one compact trigger, not two open selects", byClass(tree, "pp-trigger").length === 1 && byClass(tree, "pp-pick").length === 0, String(byClass(tree, "pp-trigger").length));
+ok("the trigger starts collapsed", byClass(tree, "pp-menu").length === 0);
+byClass(tree, "pp-trigger")[0].props.onClick();
 await settle();
 tree = render();
-let picks = byClass(tree, "pp-pick");
-ok("clicking the entry opens a popover holding both picks", byClass(tree, "pp-pop").length === 1 && picks.length === 2, String(picks.length));
-ok("both picks start unselected", picks.every((pick) => pick.props.value === ""), JSON.stringify(picks.map((pick) => pick.props.value)));
+ok("clicking it opens the menu with 模型 and 推理等级 cells", byClass(tree, "pp-menu").length === 1 && byClass(tree, "pp-cell").length === 2, String(byClass(tree, "pp-cell").length));
+ok("both cells read 未选择 before any pick", byClass(tree, "pp-cell-value").map((node) => node.children.join("")).join("|") === "未选择|未选择", byClass(tree, "pp-cell-value").map((node) => node.children.join("")).join("|"));
 posted.length = 0;
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
@@ -684,23 +683,32 @@ ok("unselected picks open the panel without a request", posted.length === 0 && b
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
 tree = render();
-/** The seat click above may have closed the popover with the panel; reopen it. */
-if (byClass(tree, "pp-pop").length === 0) {
-	byClass(tree, "pp-pick-btn")[0].props.onClick();
+if (byClass(tree, "pp-menu").length === 0) {
+	byClass(tree, "pp-trigger")[0].props.onClick();
 	await settle();
 	tree = render();
 }
-byClass(tree, "pp-pick")[0].props.onChange({ target: { value: "amazon-bedrock/qwen3.8-flash" } });
+byClass(tree, "pp-cell")[0].props.onClick();
 await settle();
 tree = render();
-ok("a pick collapses the popover again", byClass(tree, "pp-pop").length === 0);
-byClass(tree, "pp-pick-btn")[0].props.onClick();
+ok("picking 模型 opens its option list", byClass(tree, "pp-option").length > 1, String(byClass(tree, "pp-option").length));
+const target = byClass(tree, "pp-option").find((option) => String(option.children?.[0]?.children?.join("") ?? "").includes("qwen3.8-flash"));
+ok("the model list offers the catalog's entries", target !== undefined, JSON.stringify(byClass(tree, "pp-option").length));
+target.props.onClick();
 await settle();
 tree = render();
-byClass(tree, "pp-pick")[1].props.onChange({ target: { value: "high" } });
+ok("a pick collapses the menu again", byClass(tree, "pp-menu").length === 0);
+byClass(tree, "pp-trigger")[0].props.onClick();
 await settle();
 tree = render();
-ok("the entry summarises what was chosen", String(byClass(tree, "pp-pick-label")[0]?.children.join("") ?? "").includes("qwen3.8-flash"), JSON.stringify(byClass(tree, "pp-pick-label").map((node) => node.children.join(""))));
+byClass(tree, "pp-cell")[1].props.onClick();
+await settle();
+tree = render();
+const effortTarget = byClass(tree, "pp-option").find((option) => String(option.children?.[0]?.children?.join("") ?? "") === "高");
+effortTarget.props.onClick();
+await settle();
+tree = render();
+ok("the trigger summarises the chosen model", String(byClass(tree, "pp-trigger-label")[0]?.children.join("") ?? "").includes("qwen3.8-flash"), JSON.stringify(byClass(tree, "pp-trigger-label").map((node) => node.children.join(""))));
 posted.length = 0;
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
