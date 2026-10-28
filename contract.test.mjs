@@ -226,11 +226,19 @@ function render() { resetHooks(); return walk(Component(props)); }
 function rebuild() { state.length = 0; posted.length = 0; extracted.length = 0; calls.length = 0; }
 const byClass = (tree, className) => tree.filter((node) => node.props?.className === className);
 const labelled = (tree, className, label) => tree.find((node) => node.props?.className === className && node.children.join("") === label);
+/**
+ * Open the panel and then explicitly start a run: opening alone must never
+ * spend a model call, so every "and then it generated" fixture needs the click.
+ */
 async function openAndRun() {
 	let tree = render();
 	await settle();
 	tree = render();
 	byClass(tree, "pp-seat")[0].props.onClick();
+	await settle();
+	tree = render();
+	const generate = labelled(tree, "pp-btn", "生成") ?? labelled(tree, "pp-btn", "重新生成");
+	generate.props.onClick();
 	await settle();
 	return render();
 }
@@ -259,6 +267,12 @@ byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
 tree = render();
 ok("clicking the seat opens the panel", byClass(tree, "pp-panel").length === 1);
+/** The panel must open WITHOUT spending a model call; only 生成 may start one. */
+ok("opening the panel sends no request", posted.length === 0, JSON.stringify(posted));
+ok("the open panel offers a 生成 control", labelled(tree, "pp-btn", "生成") !== undefined, byClass(tree, "pp-btn").map((node) => node.children.join("")).join("|"));
+labelled(tree, "pp-btn", "生成").props.onClick();
+await settle();
+tree = render();
 const tabLabels = byClass(tree, "pp-tab").map((node) => node.children.join(""));
 ok("tabs are the optimizationMode axis, not a style axis", tabLabels.join("|") === "系统提示词|用户提示词|迭代优化", tabLabels.join("|"));
 /**
@@ -349,8 +363,8 @@ ok("a failed run leaves no result to iterate on", labelled(tree, "pp-btn", "发�
 labelled(tree, "pp-tab", "迭代优化").props.onClick();
 await settle();
 tree = render();
-const startBtn = labelled(tree, "pp-btn", "开始优化");
-ok("with no result the run button reads 开始优化", startBtn !== undefined, byClass(tree, "pp-btn").map((node) => node.children.join("")).join("|"));
+const startBtn = labelled(tree, "pp-btn", "生成");
+ok("with no result the run button reads 生成", startBtn !== undefined, byClass(tree, "pp-btn").map((node) => node.children.join("")).join("|"));
 /**
  * Doc-aligned disable: grey is allowed, silent grey is not — the title must name
  * the missing precondition, and filling it must re-enable the button (that is
@@ -367,8 +381,8 @@ ok("iterating without a revision note is refused, not sent", posted.length === 0
 byClass(tree, "pp-ta")[0].props.onChange({ target: { value: "再简洁一些" } });
 posted.length = 0;
 tree = render();
-ok("typing the revision note re-enables the run button", labelled(tree, "pp-btn", "开始优化")?.props?.disabled !== true);
-(labelled(tree, "pp-btn", "开始优化") ?? labelled(tree, "pp-btn", "重新生成")).props.onClick();
+ok("typing the revision note re-enables the run button", labelled(tree, "pp-btn", "生成")?.props?.disabled !== true);
+(labelled(tree, "pp-btn", "生成") ?? labelled(tree, "pp-btn", "重新生成")).props.onClick();
 await settle();
 const iterated = posted.at(-1);
 ok("iterate posts its own template", iterated?.templateId === "iterate", JSON.stringify(iterated));
@@ -425,7 +439,7 @@ rebuild();
 DRAFT = "";
 tree = await openAndRun();
 ok("an empty draft posts nothing on open", posted.length === 0, JSON.stringify(posted));
-const idleBtn = labelled(tree, "pp-btn", "开始优化");
+const idleBtn = labelled(tree, "pp-btn", "生成");
 ok("开始优化 is disabled while the composer is empty", idleBtn !== undefined && idleBtn.props.disabled === true, String(idleBtn?.props?.disabled));
 ok("and its title names the missing precondition", String(idleBtn?.props?.title).includes("输入框"), String(idleBtn?.props?.title));
 ok("the refusal is also explained in the panel", JSON.stringify(byClass(tree, "pp-err")[0]?.children ?? "").includes("还没有内容"), JSON.stringify(byClass(tree, "pp-err")[0]?.children ?? ""));
@@ -499,9 +513,19 @@ writeBackBtn.props.onClick();
 ok("写回输入框 puts that record's output back into the draft", calls.length === 1 && calls[0][0] === "setDraft" && calls[0][1] === POLISHED, JSON.stringify(calls));
 
 /* ---- iterate builds a child version inside the same chain --------------- */
-/** 写回收起了面板：重新点 seat 会再跑一次（作为链条第二版），然后迭代出第三版。 */
+/**
+ * 写回收起了面板：重新打开（不自动生成），显式点「生成」得到链条第二版，
+ * 再切到迭代优化出第三版。
+ */
+posted.length = 0;
 tree = render();
-byClass(tree, "pp-seat")[0].props.onClick();
+if (byClass(tree, "pp-panel").length === 0) {
+	byClass(tree, "pp-seat")[0].props.onClick();
+	await settle();
+	tree = render();
+}
+ok("reopening the panel does not generate by itself", posted.length === 0, JSON.stringify(posted));
+(labelled(tree, "pp-btn", "生成") ?? labelled(tree, "pp-btn", "重新生成")).props.onClick();
 await settle();
 tree = render();
 const iterTab = labelled(tree, "pp-tab", "迭代优化");
@@ -512,7 +536,7 @@ byClass(tree, "pp-ta")[0].props.onChange({ target: { value: "再简洁一些" } 
 await settle();
 tree = render();
 posted.length = 0;
-(labelled(tree, "pp-btn", "开始优化") ?? labelled(tree, "pp-btn", "重新生成")).props.onClick();
+(labelled(tree, "pp-btn", "生成") ?? labelled(tree, "pp-btn", "重新生成")).props.onClick();
 await settle();
 tree = render();
 const stored2 = JSON.parse(localStorageStore.get("dsh.prompt-polish/history") ?? "{}");
