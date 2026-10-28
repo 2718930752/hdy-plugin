@@ -137,6 +137,16 @@ User-prompt mode forks the conversation first: the host reads that session's der
 
 Configuration edits reload live; host implementations reload through the shell; only a change to `lib/index.js` itself needs a host restart — see the development section above.
 
+## Strategy dashboard (local demo)
+
+A 策略管理 entry sits directly below 自动化任务 in the sidebar, opening four ranking cards, three strategy cards (22 inputs), save / raw JSON / features.csv export / stats library / local rule review. It is an offline demo: no wallet, no orders, no market data.
+
+- Entry: `sidebar.panellist`, id `strategy-dashboard`, order 15 (automation 10, task board 20); the page registers on `main` under the same key
+- Storage: localStorage `strategy-dashboard.config.v1` (version 1, complete A/D/E list, atomic write; drafts survive a failed write)
+- Verification: `node strategy.test.mjs` (12 domain/safety mappings); after `pwsh -File ./dev.ps1`, run `node verify/browser-check.mjs` (11 browser scenarios, screenshots under `verify/artifacts`)
+
+Still demo-only: no live trading, wallet, market feed or AI tuning; the review button is a local read-only rule check.
+
 ## Appendix: hiding workspaces (app patch)
 
 The sidebar's workspace menu only offered rename/delete and exposes no plugin slot, so "hide workspace / show hidden" is patched into the app's own `dsh-client-ui-workspace` bundle. The built bundle, installer and restore script live in [patches/workspace-hide](./patches/workspace-hide/README.zh.md). A DSH update overwrites that file — re-run `patches/workspace-hide/apply.ps1` afterwards.

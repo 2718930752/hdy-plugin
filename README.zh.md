@@ -133,6 +133,16 @@ pwsh -File ./dev.ps1
 
 改配置不需要重启应用（配置级热更新）；改 `lib/host.js` 这类宿主实现也不需要重启（外壳监听 `lib/*.js` 并整组重载）；只有 `lib/index.js` 外壳本身变化时才需要重启宿主。
 
+## 策略管理（本地演示）
+
+侧边栏「自动化任务」的下一行新增「策略管理」入口，打开即四张收益排行 + 三张策略卡（共 22 个参数）+ 保存 / 原始 JSON / 导出 features.csv / 统计特征库 / 本地规则复盘。纯离线演示：不连接钱包、不下单、不读行情，收益与胜率均为截图样本。
+
+- 入口：`sidebar.panellist`，id `strategy-dashboard`，order 15（自动化任务 10、任务看板 20），页面注册在同 key 的 `main` 槽
+- 存储：localStorage `strategy-dashboard.config.v1`（version 1，A/D/E 三卡完整、原子写入；失败保留草稿）
+- 验收：`node strategy.test.mjs`（12 项领域与安全映射）；`pwsh -File ./dev.ps1` 后跑 `node verify/browser-check.mjs`（11 组真实浏览器场景 + 截图到 `verify/artifacts`）
+
+仍为演示模式：没有真实交易、钱包、行情或 AI 调参；「一键智能复盘优化」只是本地只读规则检查。
+
 ## 附：工作区隐藏（应用补丁）
 
 侧边栏工作区行菜单原本只有重命名/删除，也没有给插件留插槽，所以「隐藏工作区 / 查看已隐藏」改在应用自带的 `dsh-client-ui-workspace` 上，成品与安装、还原脚本都在 [patches/workspace-hide](./patches/workspace-hide/README.zh.md)。DSH 升级会覆盖该文件，届时重新运行 `patches/workspace-hide/apply.ps1`。

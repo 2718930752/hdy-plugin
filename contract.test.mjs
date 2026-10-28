@@ -180,16 +180,25 @@ ok("usage present reads the three numbers", usageText({ inputTokens: 120, output
 const injected = [];
 let registeredOptions = null;
 let Component = null;
+/** Every registration by slot name: the plugin now owns more than the composer seat. */
+const slotRegistrations = {};
 plugin.apply({
 	effect: (fn, label) => { fn(); },
 	get slots() {
 		return {
 			inject: (name, callback) => { injected.push(name); callback(); return () => {}; },
-			register: (options, component) => { registeredOptions = options; Component = component; }
+			register: (options, component) => {
+				slotRegistrations[options.name] = { options, component };
+				if (options.name !== "conversation.input.right") return;
+				registeredOptions = options;
+				Component = component;
+			}
 		};
 	}
 });
-ok("injects into conversation.input.right (the seat before the model selector)", injected.join(",") === "conversation.input.right", injected.join(","));
+ok("injects into conversation.input.right (the seat before the model selector)", injected.join(",") === "conversation.input.right,sidebar.panellist,main", injected.join(","));
+ok("registers the strategy panel right after the schedule entry", slotRegistrations["sidebar.panellist"]?.options.id === "strategy-dashboard" && slotRegistrations["sidebar.panellist"]?.options.order === 15, JSON.stringify(slotRegistrations["sidebar.panellist"]?.options));
+ok("registers the strategy page under the matching main key", slotRegistrations.main?.options.key === "strategy-dashboard" && typeof slotRegistrations.main?.component === "function");
 ok("registration names its target slot", registeredOptions?.name === "conversation.input.right");
 ok("registration carries a list-slot id", typeof registeredOptions?.id === "string" && registeredOptions.id.length > 0);
 ok("registration component is a function", typeof Component === "function");
@@ -567,6 +576,60 @@ await settle();
 /** Leave the panel in its live view for whatever assertion follows. */
 labelled(tree, "pp-btn pp-mini", "历史").props.onClick();
 await settle();
+
+/* ---- the initial mode follows the displayed catalog order ---------------- */
+/* The real host places user before system; the registry fixture above does not. */
+CATALOG.modes = ["user", "system", "iterate"].map((id) => OPTIMIZATION_MODES.find((mode) => mode.id === id));
+localStorageStore.clear();
+DRAFT = "帮我写个周报";
+rebuild();
+tree = await openAndRun();
+let defaultTabs = byClass(tree, "pp-tab");
+ok("a first-time user selects the first rendered tab", defaultTabs[0]?.children.join("") === "用户提示词" && defaultTabs[0]?.props["data-on"] === "1", JSON.stringify(defaultTabs.map((tab) => [tab.children.join(""), tab.props["data-on"]])));
+ok("the first-time auto-run uses the selected mode", posted[0]?.optimizationMode === CATALOG.modes[0].id, JSON.stringify(posted[0]));
+const firstTimePicker = byClass(tree, "pp-sel").find((node) => node.props?.title === "使用哪个优化模板");
+ok("the initial auto-run and template picker use the same first-mode template", firstTimePicker?.props.value === posted[0]?.templateId && templateIdsOf(CATALOG.modes[0].id).includes(posted[0]?.templateId), JSON.stringify({ selected: firstTimePicker?.props.value, request: posted[0] }));
+
+localStorageStore.clear();
+/* Old / unrelated storage must not override the catalog or erase history. */
+localStorageStore.set("dsh.prompt-polish/mode", "system");
+localStorageStore.set("dsh.prompt-polish/history", JSON.stringify({ schemaVersion: 2, consent: "granted", entries: [{ id: "old", mode: "system", input: "old input", output: "old output" }] }));
+DRAFT = "帮我写个周报";
+rebuild();
+tree = await openAndRun();
+defaultTabs = byClass(tree, "pp-tab");
+ok("fresh mount selects the first rendered mode, even with old system history", defaultTabs.length === 3 && defaultTabs[0].children.join("") === "用户提示词" && defaultTabs[0].props["data-on"] === "1" && defaultTabs.filter((tab) => tab.props["data-on"] === "1").length === 1, JSON.stringify(defaultTabs.map((tab) => [tab.children.join(""), tab.props["data-on"]])));
+ok("initial run posts the same mode as the first tab", posted[0]?.optimizationMode === CATALOG.modes[0].id, JSON.stringify(posted[0]));
+ok("initial template picker displays the first mode's family", pickerValues(tree).includes("user-prompt-professional") && !pickerValues(tree).includes("general-optimize"), pickerValues(tree).join(","));
+ok("old history remains available and is not used as the current selection", JSON.parse(localStorageStore.get("dsh.prompt-polish/history")).entries.some((entry) => entry.id === "old"), localStorageStore.get("dsh.prompt-polish/history"));
+
+/* Existing behavior: a user choice survives close and reopen of the same mount. */
+labelled(tree, "pp-tab", "系统提示词").props.onClick();
+await settle();
+tree = render();
+byClass(tree, "pp-x")[0].props.onClick();
+tree = render();
+byClass(tree, "pp-seat")[0].props.onClick();
+await settle();
+tree = render();
+defaultTabs = byClass(tree, "pp-tab");
+ok("a manually selected mode is retained when the panel closes and reopens", defaultTabs.find((tab) => tab.children.join("") === "系统提示词")?.props["data-on"] === "1", JSON.stringify(defaultTabs.map((tab) => [tab.children.join(""), tab.props["data-on"]])));
+ok("reopening runs the retained mode", posted.at(-1)?.optimizationMode === "system", JSON.stringify(posted.at(-1)));
+
+/* A fresh mount in any future order must follow that order, not hardcode user. */
+CATALOG.modes = ["iterate", "system", "user"].map((id) => OPTIMIZATION_MODES.find((mode) => mode.id === id));
+rebuild();
+tree = await openAndRun();
+defaultTabs = byClass(tree, "pp-tab");
+ok("a future reordered catalog initializes to its new first tab", defaultTabs[0]?.children.join("") === "迭代优化" && defaultTabs[0]?.props["data-on"] === "1", JSON.stringify(defaultTabs.map((tab) => [tab.children.join(""), tab.props["data-on"]])));
+ok("the initial content belongs to the first tab", byClass(tree, "pp-ta").length === 1, String(byClass(tree, "pp-ta").length));
+ok("a first iterate tab does not start an unrequested optimization without feedback", posted.length === 0, JSON.stringify(posted));
+
+/* A missing catalog has no valid tab or request, instead of assuming system. */
+CATALOG.modes = [];
+rebuild();
+tree = await openAndRun();
+ok("empty catalog cannot start an optimization with an invented default", posted.length === 0 && byClass(tree, "pp-tab")[0]?.children.join("") === "载入中…", JSON.stringify(posted));
 
 /* ---- absent props must not crash the composer row ----------------------- */
 let crashed = null;

@@ -1,0 +1,4 @@
+﻿strategy_id,strategy_name,enabled,net_pnl_bnb,win_rate_percent,trades,open_positions,best_percent,worst_percent,maxBuyTax,maxSellTax,maxBuyBnb,buyPercent,stopLossPercent,takeProfitMarketCap,sellAt2xPercent,sellAt4xPercent,followWindowSeconds,noBuyExitSeconds
+A,基础规则,true,0.4412,100,6,3,300.4,300.2,7.5,10,0.3,2,-50,300000,50,50,,
+D,1% 测滑点,true,0.4489,100,6,3,304.9,300.7,8,10,0.15,1,-50,300000,50,50,,
+E,无人跟单秒跑,true,0,0,0,0,0,0,8,10,0.15,1,,,,,2,10
