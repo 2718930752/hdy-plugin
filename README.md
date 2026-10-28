@@ -147,7 +147,7 @@ A 策略管理 entry sits directly below 自动化任务 in the sidebar, opening
 
 ### Market data and AI suggestions
 
-- **Market**: host proxies `GET /strategy/market/ticker` and `GET /strategy/market/klines` to `data-api.binance.vision` (public, no key). The page polls every 15s, pauses while hidden and refreshes on return; failures back off 5s→60s; leaving the page aborts in-flight requests. Klines cache for 60s per symbol/interval/limit, in memory only — never in the config key.
+- **Market**: host proxies `GET /strategy/market/ticker` and `GET /strategy/market/klines` to `data-api.binance.vision` (public, no key). The page polls every 15s, pauses while hidden and refreshes on return; failures back off 5s→60s; leaving the page aborts in-flight requests. The strip is labelled `Binance 现货`, shows the update time and `● 实时 / ● 断开，重试中 / ○ 连接中`; on failure the last real prices stay but are marked 「最后更新」and highlighted — nothing is ever filled in with fake values. Klines cache for 60s per symbol/interval/limit, in memory only — never in the config key, and the 「近 7 天 1h」row renders change, volatility, high and low.
 - **AI suggestions**: the toolbar opens an `AI 参数建议` dialog; `POST /strategy/suggest` uses the profile's agent default model (currently `workbuddy-local/cn:deepseek-v4.1-flash`), demands JSON only and retries once with the model's own text when the shape is wrong. The client re-validates every value with the same field validator and marks rejected rows with their reason. Apply writes the draft only; saving stays manual.
 - No new API keys: market is public and the model reuses DSH credentials; no key enters config, CSV, JSON export or logs.
 

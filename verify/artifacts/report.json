@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:43121/?token=1XLRPQ5yy5E3RKBmxcoi1o7KP1JrcyPh_Ov8xkwPd60",
+  "url": "http://127.0.0.1:43121/?token=xYAghKTgJpQ2ht6hlOCieNp5fNYQkRF4mpH9K9lGsPY",
   "passed": [
     "sidebar shows 策略管理 directly after 自动化任务",
     "4 排行 / 3 卡 / 22 输入",
@@ -54,5 +54,5 @@
   ],
   "failures": [],
   "consoleErrors": [],
-  "at": "2026-10-28T22:48:52.770Z"
+  "at": "2026-10-28T23:22:28.330Z"
 }
