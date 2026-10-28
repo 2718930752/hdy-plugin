@@ -3877,6 +3877,29 @@ window.__ModuleLoader__.load({
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: clsx(WorkspaceBrowser_module_css_default.root, !wide && WorkspaceBrowser_module_css_default.rail),
 				children: [
+					wide && (0, react_jsx_runtime.jsxs)("div", {
+							className: "hdy-workspace-toolbar",
+						style: {
+							display: "flex",
+							alignItems: "center",
+							gap: 6,
+							padding: "0 8px 4px",
+							fontSize: 11.5,
+							color: "var(--dsw-alias-label-secondary)"
+						},
+						children: [(0, react_jsx_runtime.jsx)("span", {
+							style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+							children: hiddenWorkspaceIds.size === 0 ? t("hidden.none") : t("hidden.summary", { n: hiddenWorkspaceIds.size })
+						}), hiddenWorkspaceIds.size > 0 && (0, react_jsx_runtime.jsx)("button", {
+							type: "button",
+							style: { marginLeft: "auto", flex: "0 0 auto", fontSize: 11.5, padding: "0 6px", height: 20, borderRadius: 6, border: "1px solid var(--dsw-alias-border-l2)", background: showHiddenWorkspaces ? "var(--dsw-alias-bg-layer-2)" : "transparent", color: "var(--dsw-alias-label-secondary)", cursor: "pointer", whiteSpace: "nowrap" },
+							onClick: (event) => {
+								event.stopPropagation();
+								setShowHiddenWorkspaces((value) => !value);
+							},
+							children: showHiddenWorkspaces ? t("hidden.hideAll") : t("hidden.showAll")
+						})]
+					}),
 					(0, react_jsx_runtime.jsxs)("div", {
 						className: WorkspaceBrowser_module_css_default.sectionHeader,
 						children: [
@@ -3946,27 +3969,7 @@ window.__ModuleLoader__.load({
 							}),
 							(0, react_jsx_runtime.jsxs)("div", {
 								className: clsx(WorkspaceBrowser_module_css_default.headerActions, wide && searchExpanded && WorkspaceBrowser_module_css_default.headerActionsHidden),
-								children: [hiddenWorkspaceIds.size > 0 && (0, react_jsx_runtime.jsx)("button", {
-									type: "button",
-									"aria-label": t("hidden.show", { n: hiddenWorkspaceIds.size }),
-									title: t("hidden.show", { n: hiddenWorkspaceIds.size }),
-									style: {
-										fontSize: 11,
-										height: 20,
-										padding: "0 6px",
-										borderRadius: 6,
-										border: "1px solid var(--dsw-alias-border-l2)",
-										background: showHiddenWorkspaces ? "var(--dsw-alias-bg-layer-2)" : "transparent",
-										color: "var(--dsw-alias-label-secondary)",
-										cursor: "pointer",
-										whiteSpace: "nowrap"
-									},
-									onClick: (event) => {
-										event.stopPropagation();
-										setShowHiddenWorkspaces((value) => !value);
-									},
-									children: showHiddenWorkspaces ? t("hidden.hide", { n: hiddenWorkspaceIds.size }) : t("hidden.show", { n: hiddenWorkspaceIds.size })
-								}), wide && (0, react_jsx_runtime.jsx)(ViewOptionsMenu, {
+								children: [wide && (0, react_jsx_runtime.jsx)(ViewOptionsMenu, {
 									groupBy,
 									orderBy,
 									archivedFilter,
@@ -4868,8 +4871,10 @@ window.__ModuleLoader__.load({
 			"rename": "重命名",
 			"rename.workspace.title": "重命名工作区",
 			"hide.workspace": "隐藏工作区",
-			"hidden.show": "已隐藏 {n}",
-			"hidden.hide": "隐藏中 {n} · 点击显示",
+			"hidden.none": "无隐藏工作区",
+			"hidden.summary": "已隐藏 {n} 个工作区",
+			"hidden.showAll": "显示",
+			"hidden.hideAll": "收起",
 			"rename.session.title": "重命名会话",
 			"field.workspaceName": "工作区名称",
 			"field.sessionName": "会话名称",
@@ -4993,8 +4998,10 @@ window.__ModuleLoader__.load({
 			"rename": "Rename",
 			"rename.workspace.title": "Rename workspace",
 			"hide.workspace": "Hide workspace",
-			"hidden.show": "{n} hidden",
-			"hidden.hide": "{n} hidden · click to show",
+			"hidden.none": "No hidden workspaces",
+			"hidden.summary": "{n} hidden workspace(s)",
+			"hidden.showAll": "Show",
+			"hidden.hideAll": "Hide",
 			"rename.session.title": "Rename session",
 			"field.workspaceName": "Workspace name",
 			"field.sessionName": "Session name",
