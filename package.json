@@ -78,6 +78,7 @@
   "scripts": {
     "test": "node mustache.test.mjs && node smoke.mjs && node contract.test.mjs && node host.test.mjs",
     "check": "node --check lib/index.js && node --check lib/client.js",
+    "dev": "pwsh -File ./dev.ps1",
     "compat": "node compat.mjs"
   }
 }

@@ -96,6 +96,23 @@ pwsh -File ./install-plugin.ps1
 
 可选：`-TargetProfile desk2.05` / `-DshHome <目录>`。HTTP 路由与历史/模型 localStorage 键保留，不更改已有数据。备份位于 profile 的 plugin-backups 目录。
 
+## 开发：不用每次重启
+
+插件分两半，热更新能力不同：
+
+| 改动 | 生效方式 |
+| --- | --- |
+| `lib/client.js`（按钮、面板、样式） | 保存即生效：DSH 内置 client-hmr 每 0.5 秒检查一次插件客户端包，改动后浏览器自动替换该插件模块，不重启、不刷新 |
+| 宿主代码（`lib/index.js`、`lib/prompts.js`、`lib/processor.js` 等） | 需要重启持有它的进程 |
+
+为了不打断正在使用的主窗口，开发时用独立实例：
+
+```powershell
+pwsh -File ./dev.ps1
+```
+
+菜单可启动/停止/重启开发实例（默认 `http://127.0.0.1:43121`，独立 profile `hdy-dev`，与桌面端共用模型凭据），跑 534 项测试，查看状态。宿主代码改完只需重启这个开发实例，主窗口和当前会话不受影响。也可直接调用 `dev.ps1 -Action start|stop|restart|test|status`。
+
 ## 测试
 
 ```powershell

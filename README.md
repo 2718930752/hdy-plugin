@@ -100,6 +100,23 @@ The installer detects the active DSH home/profile (or offers a numbered profile 
 - **Privacy**: history (if you consent) lives in the browser localStorage on your machine. No telemetry, no uploads, no account. Deleting history is real deletion.
 - **Disk**: the installed package is ~90 KB (seven lib files plus the loader patch); localStorage history is capped at 50 entries with 4,000-character clipping per field.
 
+## Development: stop restarting the app
+
+The plugin has two halves with different reload behaviour:
+
+| Change | How it applies |
+| --- | --- |
+| `lib/client.js` (button, panel, styles) | Save and it is live: DSH's built-in client-hmr polls the plugin's client bundle every 0.5 s and replaces that module in the browser — no restart, no page refresh |
+| Host code (`lib/index.js`, `lib/prompts.js`, `lib/processor.js`, …) | The process holding it must restart |
+
+To keep your working window undisturbed, develop against a separate instance:
+
+```powershell
+pwsh -File ./dev.ps1
+```
+
+The menu starts/stops/restarts that instance (default `http://127.0.0.1:43121`, its own `hdy-dev` profile sharing the desktop's model credentials), runs the 534-assertion suite, and reports status. Host changes only restart the dev instance; the main window and its session are untouched. Direct actions: `dev.ps1 -Action start|stop|restart|test|status`.
+
 ## Tests
 
 ```powershell
