@@ -668,9 +668,14 @@ rebuild();
 tree = render();
 await settle();
 tree = render();
+ok("the composer row carries one compact entry, not two open selects", byClass(tree, "pp-pick-btn").length === 1 && byClass(tree, "pp-pick").length === 0, JSON.stringify(byClass(tree, "pp-pick-btn").map((node) => node.children.join(""))));
+ok("the entry starts collapsed", byClass(tree, "pp-pop").length === 0);
+byClass(tree, "pp-pick-btn")[0].props.onClick();
+await settle();
+tree = render();
 let picks = byClass(tree, "pp-pick");
-ok("the composer row carries a model and an effort picker", picks.length === 2, String(picks.length));
-ok("both pickers start unselected", picks.every((pick) => pick.props.value === ""), JSON.stringify(picks.map((pick) => pick.props.value)));
+ok("clicking the entry opens a popover holding both picks", byClass(tree, "pp-pop").length === 1 && picks.length === 2, String(picks.length));
+ok("both picks start unselected", picks.every((pick) => pick.props.value === ""), JSON.stringify(picks.map((pick) => pick.props.value)));
 posted.length = 0;
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
@@ -679,14 +684,23 @@ ok("unselected picks open the panel without a request", posted.length === 0 && b
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
 tree = render();
-picks = byClass(tree, "pp-pick");
-picks[0].props.onChange({ target: { value: "amazon-bedrock/qwen3.8-flash" } });
+/** The seat click above may have closed the popover with the panel; reopen it. */
+if (byClass(tree, "pp-pop").length === 0) {
+	byClass(tree, "pp-pick-btn")[0].props.onClick();
+	await settle();
+	tree = render();
+}
+byClass(tree, "pp-pick")[0].props.onChange({ target: { value: "amazon-bedrock/qwen3.8-flash" } });
 await settle();
 tree = render();
-picks = byClass(tree, "pp-pick");
-picks[1].props.onChange({ target: { value: "high" } });
+ok("a pick collapses the popover again", byClass(tree, "pp-pop").length === 0);
+byClass(tree, "pp-pick-btn")[0].props.onClick();
 await settle();
 tree = render();
+byClass(tree, "pp-pick")[1].props.onChange({ target: { value: "high" } });
+await settle();
+tree = render();
+ok("the entry summarises what was chosen", String(byClass(tree, "pp-pick-label")[0]?.children.join("") ?? "").includes("qwen3.8-flash"), JSON.stringify(byClass(tree, "pp-pick-label").map((node) => node.children.join(""))));
 posted.length = 0;
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
