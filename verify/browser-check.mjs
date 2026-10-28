@@ -49,6 +49,147 @@ async function dismissHostNotices(page) {
 	await page.waitForTimeout(300);
 }
 
+
+/** 行情 + AI 建议：全部走本机路由 mock，不发真实网络请求。 */
+async function marketAndAgentPhase(browser, url, check, dismissHostNotices, out) {
+	const context = await browser.newContext({ viewport: { width: 1280, height: 960 }, acceptDownloads: true });
+	const page = await context.newPage();
+	const requests = { ticker: 0, klines: 0, suggest: 0 };
+	const suggestPayloads = [];
+	let marketMode = "ok";
+	let modelMode = "ok";
+	const now = Date.now();
+	const tickerBody = () => JSON.stringify({ at: now, cached: false, rows: [
+		{ symbol: "BNBUSDT", price: 301.25, changePercent: 1.5, volume: 10, quoteVolume: 3000, at: now },
+		{ symbol: "BTCUSDT", price: 61234.5, changePercent: -0.8, volume: 20, quoteVolume: 9000, at: now }
+	] });
+	let klinesBody = () => JSON.stringify({ symbol: "BNBUSDT", interval: "1h", at: now, count: 168, candles: [{ t: 1, o: 1, h: 2, l: 0.5, c: 1.5, v: 10 }], summary: { symbol: "BNBUSDT", interval: "1h", candles: 168, changePercent: 4.2, volatilityPercent: 0.8, high: 310, low: 280, volumeChangePercent: 12 } });
+	await page.route("**/strategy/market/ticker*", async (route) => {
+		requests.ticker += 1;
+		if (marketMode === "fail") return route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ code: "market-unavailable", message: "行情暂不可用：mock" }) });
+		return route.fulfill({ status: 200, contentType: "application/json", body: tickerBody() });
+	});
+	await page.route("**/strategy/market/klines*", async (route) => {
+		requests.klines += 1;
+		if (marketMode === "fail") return route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ code: "market-unavailable", message: "历史行情暂不可用：mock" }) });
+		return route.fulfill({ status: 200, contentType: "application/json", body: klinesBody() });
+	});
+	await page.route("**/strategy/suggest", async (route) => {
+		requests.suggest += 1;
+		suggestPayloads.push(JSON.parse(route.request().postData() ?? "{}"));
+		if (modelMode === "fail") return route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ code: "model-failure", message: "模型调用失败：mock" }) });
+		return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+			ok: true,
+			model: "mock/model",
+			usedMarket: marketMode !== "fail",
+			suggestions: [
+				{ strategyId: "A", field: "maxBuyTax", value: 9.5, reason: "BNB 24h 振幅 1.5%，放宽税率摩擦", impact: "提高成交率" },
+				{ strategyId: "D", field: "stopLossPercent", value: -30, reason: "区间波动率 0.8%，收紧止损", impact: "降低单笔回撤" },
+				{ strategyId: "E", field: "maxBuyTax", value: 101, reason: "越界样例", impact: "应被拒绝" }
+			]
+		}) });
+	});
+	await page.goto(url, { waitUntil: "domcontentloaded" });
+	await page.waitForSelector("[aria-label='策略管理']", { timeout: 30000 });
+	await dismissHostNotices(page);
+	await page.click("[aria-label='策略管理']");
+	await page.waitForSelector(".hdy-strategy");
+	await page.waitForSelector("[data-market='strip'] .hdy-market-row", { timeout: 15000 });
+
+	/* 6. 实时行情解析与展示 */
+	const strip = await page.locator("[data-market='strip']").innerText();
+	check("market strip shows the mocked price and live state", strip.includes("301.25") && strip.includes("+1.50%") && strip.includes("● 实时"), strip);
+	check("market strip shows the updated time", /更新 \d{2}:\d{2}:\d{2}/.test(strip), strip);
+
+	/* 1/2/3/4. 建议生成、校验、应用与放弃 */
+	await page.getByRole("button", { name: "AI 参数建议" }).click();
+	await page.waitForSelector("[role=dialog]");
+	await page.fill(".hdy-agent-input", "降低 A 策略的风险");
+	await page.getByRole("button", { name: "生成建议" }).click();
+	await page.waitForSelector(".hdy-agent-row", { timeout: 15000 });
+	const acceptedRows = await page.locator(".hdy-agent-row").count();
+	const rejectedText = await page.locator(".hdy-agent-rejected").innerText();
+	check("valid suggestions appear, invalid one is rejected with a reason", acceptedRows === 2 && rejectedText.includes("不能大于"), JSON.stringify({ acceptedRows, rejectedText }));
+	check("dialog states that market data was used", (await page.locator(".hdy-agent-result").innerText()).includes("已使用行情摘要"));
+	const storageBeforeApply = await page.evaluate(() => localStorage.getItem("strategy-dashboard.config.v1"));
+	/* 9. 请求载荷：含行情摘要，不含原始 K 线或密钥 */
+	const sent = suggestPayloads.at(-1);
+	check("agent request carries the market summary but no raw candles", JSON.stringify(sent.market).includes("volatilityPercent") && !JSON.stringify(sent).includes("\"candles\":[") && !/apiKey|token|secret/i.test(JSON.stringify(sent)));
+	const firstRowValue = await page.locator(".hdy-agent-row").first().innerText();
+	check("diff row reads 原值 → 建议值", firstRowValue.includes("8 → 9.5"), firstRowValue);
+	await page.locator(".hdy-agent-row input[type=checkbox]").nth(1).uncheck();
+	await page.getByRole("button", { name: "应用所选" }).click();
+	await page.waitForTimeout(150);
+	check("partial apply changes only the chosen field", await page.inputValue("#hdy-field-A-maxBuyTax") === "9.5" && await page.inputValue("#hdy-field-D-stopLossPercent") === "-50");
+	check("apply writes the draft only, storage unchanged", await page.evaluate(() => localStorage.getItem("strategy-dashboard.config.v1")) === storageBeforeApply);
+	await page.reload({ waitUntil: "domcontentloaded" });
+	await dismissHostNotices(page);
+	await page.click("[aria-label='策略管理']");
+	await page.waitForSelector(".hdy-strategy");
+	check("reload returns to the saved value after an unsaved apply", await page.inputValue("#hdy-field-A-maxBuyTax") === "8");
+
+	/* 4. 放弃不改草稿 */
+	await page.fill("#hdy-field-A-maxSellTax", "11");
+	await page.getByRole("button", { name: "AI 参数建议" }).click();
+	await page.waitForSelector("[role=dialog]");
+	await page.fill(".hdy-agent-input", "再给一版");
+	await page.getByRole("button", { name: "生成建议" }).click();
+	await page.waitForSelector(".hdy-agent-row", { timeout: 15000 });
+	await page.getByRole("button", { name: "放弃" }).click();
+	await page.waitForTimeout(100);
+	check("discard leaves the draft untouched", await page.inputValue("#hdy-field-A-maxBuyTax") === "8" && await page.inputValue("#hdy-field-A-maxSellTax") === "11");
+
+	/* 5. 模型失败：错误提示，草稿不变 */
+	modelMode = "fail";
+	await page.getByRole("button", { name: "AI 参数建议" }).click();
+	await page.waitForSelector("[role=dialog]");
+	await page.fill(".hdy-agent-input", "失败样例");
+	await page.getByRole("button", { name: "生成建议" }).click();
+	await page.waitForSelector(".hdy-dialog-error", { timeout: 15000 });
+	check("model failure is reported and the draft is untouched", (await page.locator(".hdy-dialog-error").innerText()).includes("模型调用失败") && await page.inputValue("#hdy-field-A-maxSellTax") === "11");
+	await page.getByRole("button", { name: "放弃" }).click();
+	modelMode = "ok";
+
+	/* 8. 行情失败：页面提示，功能不受影响，建议标注未使用行情 */
+	marketMode = "fail";
+	await page.waitForTimeout(16000);
+	const failedStrip = await page.locator("[data-market='strip']").innerText();
+	check("market failure is shown without breaking the page", failedStrip.includes("断开") || failedStrip.includes("不可用"), failedStrip);
+	await page.fill("#hdy-field-A-buyPercent", "3");
+	await page.locator(".hdy-card").nth(0).locator("button[type=submit]").click();
+	await page.waitForTimeout(150);
+	check("saving still works while the market is down", await page.evaluate(() => JSON.parse(localStorage.getItem("strategy-dashboard.config.v1")).configs[0].parameters.buyPercent) === 3);
+	await page.getByRole("button", { name: "AI 参数建议" }).click();
+	await page.waitForSelector("[role=dialog]");
+	await page.fill(".hdy-agent-input", "行情失败的样例");
+	await page.getByRole("button", { name: "生成建议" }).click();
+	await page.waitForSelector(".hdy-agent-result", { timeout: 15000 });
+	check("agent result marks that market data was not used", (await page.locator(".hdy-agent-result").innerText()).includes("未使用行情数据"));
+	await page.getByRole("button", { name: "放弃" }).click();
+
+	/* 6. 重连 */
+	marketMode = "ok";
+	await page.waitForTimeout(17000);
+	const recovered = await page.locator("[data-market='strip']").innerText();
+	check("polling reconnects after the market recovers", recovered.includes("● 实时"), recovered);
+
+	/* 7. 历史行情缓存命中不重复请求 */
+	const klinesAfterFirst = requests.klines;
+	await page.click("[aria-label='Automation tasks']").catch(async () => { await page.click("[aria-label='自动化任务']"); });
+	await page.waitForTimeout(300);
+	await page.click("[aria-label='策略管理']");
+	await page.waitForSelector(".hdy-strategy");
+	await page.waitForTimeout(800);
+	check("history cache avoids a second upstream request for the same window", requests.klines === klinesAfterFirst, String(requests.klines - klinesAfterFirst));
+
+	/* 6. 离开页面后停止轮询 */
+	const tickerBeforeLeave = requests.ticker;
+	await page.click("[aria-label='Automation tasks']").catch(async () => { await page.click("[aria-label='自动化任务']"); });
+	await page.waitForTimeout(16000);
+	check("leaving the page stops the ticker polling", requests.ticker === tickerBeforeLeave, String(requests.ticker - tickerBeforeLeave));
+	await context.close();
+}
+
 const browser = await chromium.launch({ headless: true, executablePath: chromiumPath });
 try {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, acceptDownloads: true });
@@ -198,6 +339,7 @@ try {
 
 	check("no console errors or page errors on the dashboard", consoleErrors.length === 0, JSON.stringify(consoleErrors.slice(0, 3)));
 
+	await marketAndAgentPhase(browser, url, check, dismissHostNotices, out);
 	await writeFile(join(out, "report.json"), JSON.stringify({ url, passed, failures, consoleErrors, at: new Date().toISOString() }, null, 2));
 } finally {
 	await browser.close();

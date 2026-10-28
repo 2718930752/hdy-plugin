@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:43121/?token=NTYA-zQBNjnziSrnHZ-Z_RDMMteVHdtdc-mnv5zJOo0",
+  "url": "http://127.0.0.1:43121/?token=1XLRPQ5yy5E3RKBmxcoi1o7KP1JrcyPh_Ov8xkwPd60",
   "passed": [
     "sidebar shows 策略管理 directly after 自动化任务",
     "4 排行 / 3 卡 / 22 输入",
@@ -33,9 +33,26 @@
     "corrupted raw value is left untouched",
     "write failure is reported and keeps the draft",
     "write failure does not claim success",
-    "no console errors or page errors on the dashboard"
+    "no console errors or page errors on the dashboard",
+    "market strip shows the mocked price and live state",
+    "market strip shows the updated time",
+    "valid suggestions appear, invalid one is rejected with a reason",
+    "dialog states that market data was used",
+    "agent request carries the market summary but no raw candles",
+    "diff row reads 原值 → 建议值",
+    "partial apply changes only the chosen field",
+    "apply writes the draft only, storage unchanged",
+    "reload returns to the saved value after an unsaved apply",
+    "discard leaves the draft untouched",
+    "model failure is reported and the draft is untouched",
+    "market failure is shown without breaking the page",
+    "saving still works while the market is down",
+    "agent result marks that market data was not used",
+    "polling reconnects after the market recovers",
+    "history cache avoids a second upstream request for the same window",
+    "leaving the page stops the ticker polling"
   ],
   "failures": [],
   "consoleErrors": [],
-  "at": "2026-10-28T22:25:30.924Z"
+  "at": "2026-10-28T22:48:52.770Z"
 }

@@ -112,7 +112,7 @@ await ready;
 const optimize = routes[OPTIMIZE_ROUTE];
 const modelsRoute = routes[MODELS_ROUTE];
 const extract = routes[EXTRACT_ROUTE];
-ok("apply registers all three routes", effects.filter((effect) => !String(effect).includes("host shell")).length === 3 && optimize && modelsRoute && extract, effects);
+ok("apply registers all three polish routes", effects.filter((effect) => String(effect).startsWith("prompt-polish:")).length === 3 && optimize && modelsRoute && extract, effects);
 ok("optimize route is exact POST", optimize?.kind === "exact" && optimize?.path === OPTIMIZE_ROUTE, optimize?.path);
 ok("models route is exact GET", modelsRoute?.kind === "exact" && modelsRoute?.path === MODELS_ROUTE, modelsRoute?.path);
 ok("extract route is exact POST", extract?.kind === "exact" && extract?.path === EXTRACT_ROUTE, extract?.path);

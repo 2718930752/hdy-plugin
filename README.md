@@ -145,7 +145,13 @@ A 策略管理 entry sits directly below 自动化任务 in the sidebar, opening
 - Storage: localStorage `strategy-dashboard.config.v1` (version 1, complete A/D/E list, atomic write; drafts survive a failed write)
 - Verification: `node strategy.test.mjs` (12 domain/safety mappings); after `pwsh -File ./dev.ps1`, run `node verify/browser-check.mjs` (11 browser scenarios, screenshots under `verify/artifacts`)
 
-Still demo-only: no live trading, wallet, market feed or AI tuning; the review button is a local read-only rule check.
+### Market data and AI suggestions
+
+- **Market**: host proxies `GET /strategy/market/ticker` and `GET /strategy/market/klines` to `data-api.binance.vision` (public, no key). The page polls every 15s, pauses while hidden and refreshes on return; failures back off 5s→60s; leaving the page aborts in-flight requests. Klines cache for 60s per symbol/interval/limit, in memory only — never in the config key.
+- **AI suggestions**: the toolbar opens an `AI 参数建议` dialog; `POST /strategy/suggest` uses the profile's agent default model (currently `workbuddy-local/cn:deepseek-v4.1-flash`), demands JSON only and retries once with the model's own text when the shape is wrong. The client re-validates every value with the same field validator and marks rejected rows with their reason. Apply writes the draft only; saving stays manual.
+- No new API keys: market is public and the model reuses DSH credentials; no key enters config, CSV, JSON export or logs.
+
+Still demo-only: no live trading, wallet, orders or AI tuning; the review button remains a local read-only rule check.
 
 ## Appendix: hiding workspaces (app patch)
 

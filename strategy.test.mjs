@@ -133,7 +133,8 @@ ok("review flags tax above 10%", highTax[0].checks.some((row) => row.tone === "w
 
 /* 10-12. 独立服务测试在插件中的等价断言 */
 const source = readFileSync(BUNDLE, "utf8");
-ok("#10 the dashboard makes no network calls (no fetch/XHR/WebSocket in the strategy region)", !/strategy[\s\S]{0,8000}?\bfetch\(|XMLHttpRequest|WebSocket|EventSource/.test(source.slice(source.indexOf("strategy-dashboard"), source.indexOf("strategy-dashboard-page"))));
+const marketRegion = source.slice(source.indexOf("strategy-market-client"), source.indexOf("strategy-dashboard-page"));
+ok("#10 the dashboard only calls the plugin's own host routes (no direct external URL, no socket)", !/https?:\/\//.test(marketRegion) && !/XMLHttpRequest|WebSocket|EventSource/.test(marketRegion) && marketRegion.includes("MARKET_TICKER_ROUTE"), marketRegion.slice(0, 120));
 ok("#11 the plugin registers no HTTP route for the dashboard", !/webServer|registerRoute|createServer|http\./.test(source.slice(source.indexOf("strategy-dashboard"), source.indexOf("strategy-dashboard-page"))));
 ok("#12 storage stays in the documented local namespace and defaults are demo data", S.STORAGE_KEY.startsWith("strategy-dashboard.") && S.STRATEGIES.every((row) => row.metrics.trades === 0 || row.metrics.trades === 6));
 
@@ -197,6 +198,42 @@ ok("each strategy switch carries its accessible name", ["A", "D", "E"].every((id
 ok("stop loss keeps a signed keyboard and tax keeps decimal", inputs.find((node) => node.props.name === "stopLossPercent")?.props.inputMode === "text" && inputs.find((node) => node.props.name === "maxBuyTax")?.props.inputMode === "decimal");
 ok("the demo boundary is stated on the page", JSON.stringify(pageTree.filter((node) => node.props?.className === "hdy-footer")).includes("不连接钱包"));
 ok("the toolbar carries the four operations", ["保存策略配置", "一键智能复盘优化", "导出 features.csv", "统计特征库"].every((label) => pageTree.some((node) => node.type === "button" && node.children?.join("") === label)));
+
+/* ---- AI 建议：校验、应用与请求载荷 ---- */
+const agentDrafts = S.createDrafts();
+const accepted = S.validateSuggestion(agentDrafts, { strategyId: "A", field: "maxBuyTax", value: 9.5, reason: "行情波动上升", impact: "降低摩擦成本" });
+ok("a valid suggestion passes the same field validator", accepted.ok === true && accepted.value === 9.5 && accepted.from === "8", JSON.stringify(accepted));
+const rejectedRange = S.validateSuggestion(agentDrafts, { strategyId: "A", field: "maxBuyTax", value: 101, reason: "", impact: "" });
+ok("an out-of-range suggestion is rejected with the field rule", rejectedRange.ok === false && rejectedRange.reason.includes("不能大于"), JSON.stringify(rejectedRange));
+const rejectedType = S.validateSuggestion(agentDrafts, { strategyId: "A", field: "maxBuyTax", value: "9", reason: "", impact: "" });
+ok("a string value is rejected", rejectedType.ok === false && rejectedType.reason.includes("数字"));
+const rejectedField = S.validateSuggestion(agentDrafts, { strategyId: "E", field: "stopLossPercent", value: -50, reason: "", impact: "" });
+ok("a field the strategy does not own is rejected", rejectedField.ok === false && rejectedField.reason.includes("没有字段"));
+const rejectedUnknown = S.validateSuggestion(agentDrafts, { strategyId: "Z", field: "maxBuyTax", value: 5 });
+ok("an unknown strategy is rejected", rejectedUnknown.ok === false);
+
+const applied = S.applySuggestions(agentDrafts, [{ id: "A", field: "maxBuyTax", value: 9.5 }, { id: "D", field: "stopLossPercent", value: -30 }]);
+ok("applying suggestions writes only the drafts", applied.A.parameters.maxBuyTax === "9.5" && applied.D.parameters.stopLossPercent === "-30" && agentDrafts.A.parameters.maxBuyTax === "8");
+const savedBaseline = S.createDefaultConfigs();
+ok("applying suggestions never touches the saved configs", savedBaseline[0].parameters.maxBuyTax === 8 && savedBaseline[1].parameters.stopLossPercent === -50 && applied.A.parameters.maxBuyTax !== String(savedBaseline[0].parameters.maxBuyTax));
+const partial = S.applySuggestions(agentDrafts, [{ id: "A", field: "maxBuyTax", value: 6 }]);
+ok("partial apply changes exactly the chosen field", partial.A.parameters.maxBuyTax === "6" && partial.A.parameters.maxSellTax === agentDrafts.A.parameters.maxSellTax && partial.D === agentDrafts.D);
+ok("discarding (empty apply) keeps the drafts identical", JSON.stringify(S.applySuggestions(agentDrafts, [])) === JSON.stringify(agentDrafts));
+
+const marketSummary = { at: 1_700_000_000_000, symbols: [{ symbol: "BNBUSDT", price: 300, changePercent: 1.2, quoteVolume: 1000 }], history: [{ symbol: "BNBUSDT", interval: "1h", candles: 168, changePercent: 4.2, volatilityPercent: 0.8, high: 310, low: 280, volumeChangePercent: 12 }] };
+const payload = S.buildAgentPayload(agentDrafts, defaults, S.RANKINGS, [], marketSummary, "降低 A 的风险");
+const payloadText = JSON.stringify(payload);
+ok("the agent payload carries drafts, saved differences and market summary", payload.strategies.length === 3 && Array.isArray(payload.savedDifferences) && payload.market.history[0].candles === 168);
+ok("the agent payload never carries raw candles", !payloadText.includes("\"candles\":[") && !payloadText.includes("\"candles\": [{"));
+const payloadWithoutMarket = S.buildAgentPayload(agentDrafts, defaults, S.RANKINGS, [], null, "x");
+ok("an unavailable market is sent as null, not fabricated", payloadWithoutMarket.market === null);
+ok("the agent payload carries no credential field", !/apiKey|authorization|token|secret/i.test(payloadText));
+
+const tickers = S.parseMarketTickers({ at: 1, rows: [{ symbol: "BNBUSDT", price: 300.5, changePercent: 1.25, volume: 10, quoteVolume: 3000, at: 1 }] });
+ok("ticker rows parse into the panel shape", tickers.length === 1 && tickers[0].price === 300.5 && tickers[0].changePercent === 1.25);
+ok("a malformed ticker row is rejected", (() => { try { S.parseMarketTickers({ rows: [{ symbol: "X" }] }); return false; } catch { return true; } })());
+const klines = S.parseMarketKlines({ symbol: "BNBUSDT", interval: "1h", at: 2, candles: [{ t: 1, o: 1, h: 2, l: 0.5, c: 1.5, v: 10 }], summary: { candles: 1 } });
+ok("kline payload keeps the summary and drops nothing needed", klines.symbol === "BNBUSDT" && klines.count === 1 && klines.summary.candles === 1);
 
 console.log(fail.length === 0 ? "\nALL PASS" : "\nFAILURES (" + fail.length + "): " + fail.join(" | "));
 if (fail.length > 0) process.exitCode = 1;

@@ -141,7 +141,13 @@ pwsh -File ./dev.ps1
 - 存储：localStorage `strategy-dashboard.config.v1`（version 1，A/D/E 三卡完整、原子写入；失败保留草稿）
 - 验收：`node strategy.test.mjs`（12 项领域与安全映射）；`pwsh -File ./dev.ps1` 后跑 `node verify/browser-check.mjs`（11 组真实浏览器场景 + 截图到 `verify/artifacts`）
 
-仍为演示模式：没有真实交易、钱包、行情或 AI 调参；「一键智能复盘优化」只是本地只读规则检查。
+### 行情与 AI 参数建议
+
+- **行情**：宿主机代理 `GET /strategy/market/ticker`、`GET /strategy/market/klines`，上游 `data-api.binance.vision`（公开、无需 Key）。页面每 15 秒轮询，页面隐藏即暂停、回到前台立刻补一次；失败按 5s→60s 指数退避重连；离开页面中止在途请求。K 线按 symbol/interval/limit 缓存 60 秒（仅内存，不写入配置文件）。
+- **AI 建议**：工具条「AI 参数建议」打开弹窗；`POST /strategy/suggest` 走 profile 的 agent default model（当前 `workbuddy-local/cn:deepseek-v4.1-flash`），要求只回 JSON，格式不合规会带原文重试一次；客户端用同一套字段校验复核，越界或格式错误逐条标注拒绝原因。应用只写草稿，仍需手动保存。
+- 不新增任何 API Key：行情公开，模型复用 DSH 已有凭据；密钥不进入配置、CSV、JSON 导出或日志。
+
+仍为演示模式：没有真实交易、钱包、下单或 AI 调参；「一键智能复盘优化」仍是本地只读规则检查。
 
 ## 附：工作区隐藏（应用补丁）
 
