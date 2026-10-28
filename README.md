@@ -1,6 +1,8 @@
-# dsh-prompt-polish
+# hdy-plugin
 
 **English** · [中文](./README.zh.md)
+
+Independent fork of [benrong2048-boop/dsh-prompt-polish](https://github.com/benrong2048-boop/dsh-prompt-polish) 0.2.5; version `0.2.5-hdy.1`. Original attribution and AGPL licensing are retained.
 
 You type "帮我写个周报" into DSH, hit Enter, and get a generic answer. You know the model *could* do it well — if only the prompt had a role, a goal, the data you have, and an output format. Writing all that out every time is the boring part.
 
@@ -84,43 +86,13 @@ history/version chain, comparison, and token reporting are new in this repo.
 
 ## Install
 
-DSH (desktop or web profile) + Node.js 18+.
-
-Verified against DeepSeek Harness `0.2.1-rc.3` (desktop): the host routes, the `conversation.input.right` slot and the `llm` call path have been unchanged across `0.2.0-rc.2` → `0.2.1-rc.3`, so no plugin-side changes were needed. `node compat.mjs` re-checks that contract against your installed build and exits non-zero if a future release breaks it.
-
-The plugin is on npm as [`@benrong/dsh-prompt-polish`](https://www.npmjs.com/package/@benrong/dsh-prompt-polish), so on a CLI-managed profile (e.g. `web`) the stock command works:
-
-```bash
-dsh plugin --profile web add @benrong/dsh-prompt-polish
-```
-
-On the **desktop** profile the Electron app owns the profile (`dsh plugin --profile desktop …` is refused), so use the script below instead.
+Run from this checkout, without required arguments or environment setup:
 
 ```powershell
-git clone https://github.com/benrong2048-boop/dsh-prompt-polish.git
-cd dsh-prompt-polish
-pwsh -File install-plugin.ps1 -ProfileName desktop   # or -ProfileName web
+pwsh -File ./install-plugin.ps1
 ```
 
-The script copies the package into %USERPROFILE%\.dsh\profiles\<profile>\node_modules\,
-syntax-checks it, and appends the plugin row to that profile's cordis.patch.yml
-(it prints the exact lines it writes). Then **restart DSH** — a full restart; the
-desktop app has no reload key, and Ctrl+R does nothing.
-
-Manual install, if you would rather see everything it touches:
-
-1. Copy this folder to %USERPROFILE%\.dsh\profiles\<profile>\node_modules\@benrong\dsh-prompt-polish.
-2. Append to %USERPROFILE%\.dsh\profiles\<profile>\cordis.patch.yml:
-
-```yaml
-- insert:
-    - id: prompt-polish
-      name: "@benrong/dsh-prompt-polish"
-```
-
-3. Restart DSH.
-
-Uninstall: delete the package folder and the insert block above, restart DSH.
+The installer detects the active DSH home/profile (or offers a numbered profile menu outside DSH), runs 534 local assertions and syntax checks, backs up the profile configuration and original package, then uses DSH package management to link this checkout and remove the original. Fully restart DSH afterwards. Keep this checkout at the same path while linked. Optional parameters: `-TargetProfile desk2.05` and `-DshHome <directory>`. Backups are under the profile's plugin-backups directory. Existing HTTP routes, model selection and history storage keys are unchanged.
 
 ## Cost and privacy
 
@@ -135,8 +107,6 @@ node mustache.test.mjs    # rendering engine semantics (34)
 node smoke.mjs            # template layer (219)
 node contract.test.mjs    # browser half, real useEffect + fake streaming fetch (117)
 node host.test.mjs        # host half, three routes + failure paths (164)
-node compare-upstream.mjs # audit: template texts vs upstream (needs $env:UP=<upstream checkout>)
-node compat.mjs           # audit: the DSH API surface this plugin depends on (auto-detects the installed app)
 ```
 
 534 assertions, all green at publish time.

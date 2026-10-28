@@ -13,12 +13,12 @@
  * pass while the button itself was never exercised.
  */
 import { readFileSync } from "node:fs";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import vm from "node:vm";
 
-const PROFILE = "C:/Users/23528/.dsh/profiles/desktop/node_modules/@benrong/dsh-prompt-polish";
+const PROFILE = fileURLToPath(new URL(".", import.meta.url));
 const BUNDLE = `${PROFILE}/lib/client.js`;
-const PACKAGE_ID = "@benrong/dsh-prompt-polish";
+const PACKAGE_ID = "hdy-plugin";
 const { OPTIMIZATION_MODES, TEMPLATES } = await import(pathToFileURL(`${PROFILE}/lib/prompts.js`).href);
 
 const fail = [];

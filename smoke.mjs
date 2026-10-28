@@ -6,9 +6,9 @@
  * instead of being asserted as correct: they print `BUG`, never turn the suite
  * red, and flip to `RESOLVED` on their own once lib catches up. See section 13.
  */
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
-const PROFILE = "C:/Users/23528/.dsh/profiles/desktop/node_modules/@benrong/dsh-prompt-polish";
+const PROFILE = fileURLToPath(new URL(".", import.meta.url));
 const lib = (name) => pathToFileURL(`${PROFILE}/lib/${name}`).href;
 
 const mustache = await import(lib("mustache.js"));

@@ -1,6 +1,6 @@
 {
-  "name": "@benrong/dsh-prompt-polish",
-  "version": "0.2.5",
+  "name": "hdy-plugin",
+  "version": "0.2.5-hdy.1",
   "description": "Prompt-polish button beside the composer model seat for DSH, porting linshenkx/prompt-optimizer's optimizationMode axis, mustache template engine, template registry and variable extraction.",
   "type": "module",
   "license": "AGPL-3.0-or-later",
@@ -61,11 +61,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/benrong2048-boop/dsh-prompt-polish.git"
+    "url": "git+https://github.com/2718930752/hdy-plugin.git"
   },
-  "homepage": "https://github.com/benrong2048-boop/dsh-prompt-polish#readme",
+  "homepage": "https://github.com/2718930752/hdy-plugin#readme",
   "bugs": {
-    "url": "https://github.com/benrong2048-boop/dsh-prompt-polish/issues"
+    "url": "https://github.com/2718930752/hdy-plugin/issues"
   },
   "keywords": [
     "dsh",
@@ -76,6 +76,8 @@
     "deepseek-harness"
   ],
   "scripts": {
+    "test": "node mustache.test.mjs && node smoke.mjs && node contract.test.mjs && node host.test.mjs",
+    "check": "node --check lib/index.js && node --check lib/client.js",
     "compat": "node compat.mjs"
   }
 }

@@ -1,6 +1,8 @@
-# dsh-prompt-polish
+# hdy-plugin
 
 [English](./README.md) · **中文**
+
+基于 [benrong2048-boop/dsh-prompt-polish](https://github.com/benrong2048-boop/dsh-prompt-polish) 0.2.5 的独立 fork；当前版本 `0.2.5-hdy.1`。保留原作者版权与 AGPL 协议。
 
 在 DSH 的输入框旁边加一个 ✨ 润色按钮：写下你的需求，点一下，几秒钟拿到一份带角色、目标、约束和输出格式的完整提示词。默认只写回输入框，发不发由你。
 
@@ -84,27 +86,15 @@
 
 ## 安装
 
-已在 DeepSeek Harness `0.2.1-rc.3`（桌面版）实测：宿主路由、`conversation.input.right` 插槽与 `llm` 调用路径在 `0.2.0-rc.2` → `0.2.1-rc.3` 之间没有变化，升级不需要改插件代码。跑 `node compat.mjs` 可对着你本机安装的版本复查这份契约，缺任何一项都会以非零码退出。
-
-需要 DSH（desktop 或 web profile）与 Node.js 18+。
+在本仓库运行（无需参数或手动设置环境变量）：
 
 ```powershell
-git clone https://github.com/benrong2048-boop/dsh-prompt-polish.git
-cd dsh-prompt-polish
-pwsh -File install-plugin.ps1 -ProfileName desktop   # 或 -ProfileName web
+pwsh -File ./install-plugin.ps1
 ```
 
-脚本把包复制进 `%USERPROFILE%\.dsh\profiles\<profile>\node_modules\`，做语法检查，并把插件行写进该 profile 的 `cordis.patch.yml`（会打印写入内容）。之后**完整重启 DSH**：桌面应用没有绑定刷新键，Ctrl+R 无效。
+自动检测当前 DSH home/profile（当前终端没有 DSH 环境时，优先使用 .dsh-beta，并提供 profile 编号选择）。先执行 534 项本地测试及语法检查，再备份配置与原插件，使用 DSH 官方包管理命令将本目录作为 link 依赖安装，并移除原版。安装后完整重启 DSH。请保留本仓库路径；再次运行可重新验证安装。
 
-手动安装：把本目录复制到上述 node_modules 路径，并在 cordis.patch.yml 里加：
-
-```yaml
-- insert:
-    - id: prompt-polish
-      name: "@benrong/dsh-prompt-polish"
-```
-
-卸载：删包目录、删那段 insert，重启 DSH。
+可选：`-TargetProfile desk2.05` / `-DshHome <目录>`。HTTP 路由与历史/模型 localStorage 键保留，不更改已有数据。备份位于 profile 的 plugin-backups 目录。
 
 ## 测试
 
@@ -113,7 +103,6 @@ node mustache.test.mjs    # 渲染引擎语义（34 项）
 node smoke.mjs            # 模板层（219 项）
 node contract.test.mjs    # 浏览器半：真 useEffect + 假流式 fetch（117 项）
 node host.test.mjs        # 宿主半：三条路由与失败路径（164 项）
-node compare-upstream.mjs # 审计：模板正文与上游逐字比对（需 $env:UP=<上游检出>）
 ```
 
 发布时 534 项断言全部通过。

@@ -1,4 +1,4 @@
-import { render, validate, escapeHTML } from "../prompt-polish/lib/mustache.js";
+import { render, validate, escapeHTML } from "./lib/mustache.js";
 
 const fail = [];
 const ok = (label, cond, extra) => { console.log((cond ? "PASS " : "FAIL ") + label + (cond || extra === void 0 ? "" : " -> " + JSON.stringify(extra))); if (!cond) fail.push(label); };
