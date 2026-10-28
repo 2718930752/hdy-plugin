@@ -143,7 +143,8 @@ pwsh -File ./dev.ps1
 
 ### 行情与 AI 参数建议
 
-- **行情**：宿主机代理 `GET /strategy/market/ticker`、`GET /strategy/market/klines`，上游 `data-api.binance.vision`（公开、无需 Key）。页面每 15 秒轮询，页面隐藏即暂停、回到前台立刻补一次；失败按 5s→60s 指数退避重连；离开页面中止在途请求。行情条标注 `Binance 现货`、更新时间与 `● 实时 / ● 断开，重试中 / ○ 连接中`，断开时保留的价格会标成「最后更新」并标黄，绝不补假数据。K 线按 symbol/interval/limit 缓存 60 秒（仅内存，不写入配置文件），面板上的「近 7 天 1h」行展示涨跌幅、波动率与高低点。
+- **回测**：打开策略 UI 时用真实 1h×168 根 K 线跑一次（同一打开会话只跑一次，关闭重开再跑）。规则：SMA20 上穿入场，止损/跌破 SMA20/24 根到期离场，名义本金 = maxBuyBnb；输出净盈亏（BNB）、胜率、交易数、最佳/最差单笔。K/F 无参数配置，无法回测，不参与排序。
+- **行情**：宿主机代理 `GET /strategy/market/ticker`、`GET /strategy/market/klines`，上游 `data-api.binance.vision`（公开、无需 Key）。策略 UI 打开且页面可见时 **每 1 秒**刷新 ticker；隐藏即暂停、回前台补拉；离开页面卸载即停。请求 800ms 超时、in-flight 去重、连续失败按 2s→30s 退避，恢复回 1 秒。行情条标注 `Binance 现货`、更新时间与 `● 实时 / ● 断开，重试中 / ○ 连接中`，断开时保留的价格会标成「最后更新」并标黄，绝不补假数据。K 线按 symbol/interval/limit 缓存 60 秒（仅内存，不写入配置文件），面板上的「近 7 天 1h」行展示涨跌幅、波动率与高低点。
 - **AI 建议**：工具条「AI 参数建议」打开弹窗；`POST /strategy/suggest` 走 profile 的 agent default model（当前 `workbuddy-local/cn:deepseek-v4.1-flash`），要求只回 JSON，格式不合规会带原文重试一次；客户端用同一套字段校验复核，越界或格式错误逐条标注拒绝原因。应用只写草稿，仍需手动保存。
 - 不新增任何 API Key：行情公开，模型复用 DSH 已有凭据；密钥不进入配置、CSV、JSON 导出或日志。
 

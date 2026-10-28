@@ -1,57 +1,149 @@
 {
-  "at": "2026-10-28T23:20:54.790Z",
-  "strip1": "Binance 现货\nBTCUSDT\n81340.83\n+0.58%\nETHUSDT\n2361.13\n+0.52%\nBNBUSDT\n758.5100\n+1.82%\n更新 19:20:33\n● 实时",
-  "strip2": "Binance 现货\nBTCUSDT\n81349.67\n+0.59%\nETHUSDT\n2361.46\n+0.54%\nBNBUSDT\n758.6600\n+1.84%\n更新 19:20:50\n● 实时",
-  "exchange1": {
-    "BTCUSDT": 81340.83,
-    "ETHUSDT": 2361.14,
-    "BNBUSDT": 758.51
-  },
-  "exchange2": {
-    "BTCUSDT": 81349.67,
-    "ETHUSDT": 2361.29,
-    "BNBUSDT": 758.71
-  },
+  "at": "2026-10-28T23:48:24.549Z",
+  "samples": [
+    {
+      "index": 1,
+      "at": "2026-10-28T23:48:10.424Z",
+      "displayed": 758.78,
+      "real": 758.81,
+      "diffPercent": 0.0039535588618985935,
+      "time": "19:48:07",
+      "live": true
+    },
+    {
+      "index": 2,
+      "at": "2026-10-28T23:48:11.868Z",
+      "displayed": 758.81,
+      "real": 758.81,
+      "diffPercent": 0,
+      "time": "19:48:10",
+      "live": true
+    },
+    {
+      "index": 3,
+      "at": "2026-10-28T23:48:13.313Z",
+      "displayed": 758.81,
+      "real": 758.81,
+      "diffPercent": 0,
+      "time": "19:48:10",
+      "live": true
+    },
+    {
+      "index": 4,
+      "at": "2026-10-28T23:48:14.763Z",
+      "displayed": 758.81,
+      "real": 758.81,
+      "diffPercent": 0,
+      "time": "19:48:12",
+      "live": true
+    },
+    {
+      "index": 5,
+      "at": "2026-10-28T23:48:16.218Z",
+      "displayed": 758.81,
+      "real": 758.81,
+      "diffPercent": 0,
+      "time": "19:48:14",
+      "live": true
+    },
+    {
+      "index": 6,
+      "at": "2026-10-28T23:48:17.669Z",
+      "displayed": 758.81,
+      "real": 758.81,
+      "diffPercent": 0,
+      "time": "19:48:14",
+      "live": true
+    },
+    {
+      "index": 7,
+      "at": "2026-10-28T23:48:19.122Z",
+      "displayed": 758.81,
+      "real": 758.84,
+      "diffPercent": 0.003953402561816246,
+      "time": "19:48:16",
+      "live": true
+    },
+    {
+      "index": 8,
+      "at": "2026-10-28T23:48:20.574Z",
+      "displayed": 758.83,
+      "real": 758.85,
+      "diffPercent": 0.002635566976343389,
+      "time": "19:48:18",
+      "live": true
+    },
+    {
+      "index": 9,
+      "at": "2026-10-28T23:48:22.020Z",
+      "displayed": 758.85,
+      "real": 758.85,
+      "diffPercent": 0,
+      "time": "19:48:20",
+      "live": true
+    },
+    {
+      "index": 10,
+      "at": "2026-10-28T23:48:23.470Z",
+      "displayed": 758.85,
+      "real": 758.88,
+      "diffPercent": 0.00395319418089457,
+      "time": "19:48:20",
+      "live": true
+    }
+  ],
   "checks": [
     {
-      "label": "displayed BNBUSDT matches exchange",
-      "detail": "{\"displayed\":758.51,\"real\":758.51}"
+      "label": "ranking cards are backtest output",
+      "detail": "策略 D · 1% 测滑点 | #1 |  | -0.0074 BNB |  | 胜率 29% | 交易 31 笔 | 最佳 1.25% |  | 实时 +0% | 回测口径 1h×168"
     },
     {
-      "label": "displayed BTCUSDT matches exchange",
-      "detail": "{\"displayed\":81340.83,\"real\":81340.83}"
+      "label": "card metrics are labelled 回测 / 实时",
+      "detail": "策略 A · 基础规则 | 运行中 | 净盈亏（回测） | -0.0149 BNB | 胜率 / 交易（回测） | 29% · 31 笔 | 最佳 / 最差（回测） | 1.25% / -1.04% | 实时偏离 | +0% |  | 税率过滤 · 买 2% · 2x/4x 分批卖半 · 市值 $300K 卖半 |  | 税率过滤 | 最大买入税率 % | 最大卖出税率 % | 买入限额 | 单笔买入上限 BNB | 买入总量 % | 风控参数 | 止损 % | 市值止盈 $ | 分段止盈 | 翻倍出本(x2)卖出 % | 二段止盈(x4)卖出 % | 保存策略配置 | 原始 JSON"
     },
     {
-      "label": "displayed ETHUSDT matches exchange",
-      "detail": "{\"displayed\":2361.13,\"real\":2361.14}"
+      "label": "sample 1 matches exchange",
+      "detail": "{\"displayed\":758.78,\"real\":758.81,\"time\":\"19:48:07\"}"
     },
     {
-      "label": "strip is labelled live",
-      "detail": "Binance 现货 | BTCUSDT | 81340.83 | +0.58% | ETHUSDT | 2361.13 | +0.52% | BNBUSDT | 758.5100 | +1.82% | 更新 19:20:33 | ● 实时"
+      "label": "sample 2 matches exchange",
+      "detail": "{\"displayed\":758.81,\"real\":758.81,\"time\":\"19:48:10\"}"
     },
     {
-      "label": "strip shows the update time",
-      "detail": "Binance 现货 | BTCUSDT | 81340.83 | +0.58% | ETHUSDT | 2361.13 | +0.52% | BNBUSDT | 758.5100 | +1.82% | 更新 19:20:33 | ● 实时"
+      "label": "sample 3 matches exchange",
+      "detail": "{\"displayed\":758.81,\"real\":758.81,\"time\":\"19:48:10\"}"
     },
     {
-      "label": "7d history summary is real and rendered",
-      "detail": "近 7 天 1h | BNBUSDT | 涨跌 | +1.3631% | · 波动 0.3256% · 高 762.2 / 低 718 | BTCUSDT | 涨跌 | -3.397% | · 波动 0.2845% · 高 84377.21 / 低 79220.74 | ETHUSDT | 涨跌 | -4.5545% | · 波动 0.404% · 高 2482.49 / 低 2282.46"
+      "label": "sample 4 matches exchange",
+      "detail": "{\"displayed\":758.81,\"real\":758.81,\"time\":\"19:48:12\"}"
     },
     {
-      "label": "panel auto-refreshes within the poll interval",
-      "detail": "{\"time1\":\"19:20:33\",\"time2\":\"19:20:50\"}"
+      "label": "sample 5 matches exchange",
+      "detail": "{\"displayed\":758.81,\"real\":758.81,\"time\":\"19:48:14\"}"
     },
     {
-      "label": "refreshed BNBUSDT still matches exchange",
-      "detail": "{\"displayed\":758.66,\"real\":758.71}"
+      "label": "sample 6 matches exchange",
+      "detail": "{\"displayed\":758.81,\"real\":758.81,\"time\":\"19:48:14\"}"
     },
     {
-      "label": "refreshed BTCUSDT still matches exchange",
-      "detail": "{\"displayed\":81349.67,\"real\":81349.67}"
+      "label": "sample 7 matches exchange",
+      "detail": "{\"displayed\":758.81,\"real\":758.84,\"time\":\"19:48:16\"}"
     },
     {
-      "label": "refreshed ETHUSDT still matches exchange",
-      "detail": "{\"displayed\":2361.46,\"real\":2361.29}"
+      "label": "sample 8 matches exchange",
+      "detail": "{\"displayed\":758.83,\"real\":758.85,\"time\":\"19:48:18\"}"
+    },
+    {
+      "label": "sample 9 matches exchange",
+      "detail": "{\"displayed\":758.85,\"real\":758.85,\"time\":\"19:48:20\"}"
+    },
+    {
+      "label": "sample 10 matches exchange",
+      "detail": "{\"displayed\":758.85,\"real\":758.88,\"time\":\"19:48:20\"}"
+    },
+    {
+      "label": "the update time advances during the run",
+      "detail": "[\"19:48:07\",\"19:48:10\",\"19:48:12\",\"19:48:14\",\"19:48:16\",\"19:48:18\",\"19:48:20\"]"
     }
   ],
   "failures": []

@@ -191,7 +191,7 @@ const walk = (node, out = []) => {
 const pageTree = walk(StrategyPage());
 const byClass = (name) => pageTree.filter((node) => node.props?.className === name);
 const inputs = pageTree.filter((node) => node.props?.className === "hdy-input");
-ok("the page renders four ranking cards", byClass("hdy-rank").length === 4);
+ok("the ranking area starts in the backtest state (no static samples)", byClass("hdy-rank").length === 0 && byClass("hdy-rank hdy-rank-state").length === 1, JSON.stringify(pageTree.filter((node) => String(node.props?.className ?? "").includes("hdy-rank")).map((node) => node.props.className)));
 ok("the page renders the three strategy cards", byClass("hdy-card").length === 3);
 ok("the page renders 22 parameter inputs", inputs.length === 22, String(inputs.length));
 ok("each strategy switch carries its accessible name", ["A", "D", "E"].every((id) => pageTree.some((node) => node.props?.role === "switch" && String(node.props["aria-label"]).includes("策略 " + id))));
@@ -234,6 +234,24 @@ ok("ticker rows parse into the panel shape", tickers.length === 1 && tickers[0].
 ok("a malformed ticker row is rejected", (() => { try { S.parseMarketTickers({ rows: [{ symbol: "X" }] }); return false; } catch { return true; } })());
 const klines = S.parseMarketKlines({ symbol: "BNBUSDT", interval: "1h", at: 2, candles: [{ t: 1, o: 1, h: 2, l: 0.5, c: 1.5, v: 10 }], summary: { candles: 1 } });
 ok("kline payload keeps the summary and drops nothing needed", klines.symbol === "BNBUSDT" && klines.count === 1 && klines.summary.candles === 1);
+
+/* ---- 回测：只用真实 K 线，结果可复核 ---- */
+function makeCandles(prices, volumes) {
+	return prices.map((price, index) => ({ t: 1700000000000 + index * 3600000, o: price, h: price * 1.01, l: price * 0.99, c: price, v: volumes === undefined ? 100 : volumes[index] }));
+}
+const flatCandles = makeCandles(Array.from({ length: 30 }, (_, index) => 100));
+const risingCandles = makeCandles(Array.from({ length: 40 }, (_, index) => (index < 22 ? 100 : 100 + (index - 21) * 2)));
+const fallingCandles = makeCandles(Array.from({ length: 40 }, (_, index) => (index < 22 ? 100 : 100 - (index - 21) * 1)));
+const btDefault = S.createDefaultConfigs();
+const btFlat = S.runBacktest(btDefault, [{ symbol: "BNBUSDT", candles: flatCandles }]);
+ok("a flat market produces zero trades (no invented activity)", btFlat.ok === true && btFlat.results.every((row) => row.trades === 0 && row.netPnl === 0 && row.winRate === null), JSON.stringify(btFlat.results));
+const btRise = S.runBacktest(btDefault, [{ symbol: "BNBUSDT", candles: risingCandles }]);
+ok("an SMA cross enters a trade and reports a positive result", btRise.ok === true && btRise.results[0].trades >= 1 && btRise.results[0].netPnl > 0, JSON.stringify(btRise.results[0]));
+const btFall = S.runBacktest(btDefault, [{ symbol: "BNBUSDT", candles: fallingCandles }]);
+ok("a falling market never yields a positive best trade", btFall.ok === true && btFall.results.every((row) => row.best === null || row.best <= 0), JSON.stringify(btFall.results));
+ok("no klines means a visible backtest failure", S.runBacktest(btDefault, []).ok === false);
+const drift = S.liveDrift(btRise, [{ symbol: "BNBUSDT", price: 104, changePercent: 1, volume: 1, quoteVolume: 1, at: 1 }], [{ symbol: "BNBUSDT", candles: risingCandles }]);
+ok("live drift is the change since the last backtest close", drift[0].drift !== null && Math.abs(drift[0].drift - ((104 / risingCandles.at(-1).c - 1) * 100)) < 0.01, JSON.stringify(drift));
 
 console.log(fail.length === 0 ? "\nALL PASS" : "\nFAILURES (" + fail.length + "): " + fail.join(" | "));
 if (fail.length > 0) process.exitCode = 1;
