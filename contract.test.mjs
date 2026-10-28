@@ -660,5 +660,42 @@ let crashed = null;
 try { resetHooks(); walk(Component({})); } catch (error) { crashed = error.message; }
 ok("tolerates absent input props without throwing", crashed === null, crashed);
 
+/* ---- composer pickers: both chosen means one click runs ------------------ */
+localStorageStore.delete("dsh.prompt-polish/model");
+localStorageStore.delete("dsh.prompt-polish/effort");
+CATALOG.modes = OPTIMIZATION_MODES.slice();
+rebuild();
+tree = render();
+await settle();
+tree = render();
+let picks = byClass(tree, "pp-pick");
+ok("the composer row carries a model and an effort picker", picks.length === 2, String(picks.length));
+ok("both pickers start unselected", picks.every((pick) => pick.props.value === ""), JSON.stringify(picks.map((pick) => pick.props.value)));
+posted.length = 0;
+byClass(tree, "pp-seat")[0].props.onClick();
+await settle();
+tree = render();
+ok("unselected picks open the panel without a request", posted.length === 0 && byClass(tree, "pp-panel").length === 1, JSON.stringify(posted));
+byClass(tree, "pp-seat")[0].props.onClick();
+await settle();
+tree = render();
+picks = byClass(tree, "pp-pick");
+picks[0].props.onChange({ target: { value: "amazon-bedrock/qwen3.8-flash" } });
+await settle();
+tree = render();
+picks = byClass(tree, "pp-pick");
+picks[1].props.onChange({ target: { value: "high" } });
+await settle();
+tree = render();
+posted.length = 0;
+byClass(tree, "pp-seat")[0].props.onClick();
+await settle();
+tree = render();
+ok("both picks chosen: one click posts exactly one request", posted.length === 1, JSON.stringify(posted));
+ok("the request carries the picked route and effort", posted[0]?.provider === "amazon-bedrock" && posted[0]?.model === "qwen3.8-flash" && posted[0]?.reasoningEffort === "high", JSON.stringify(posted[0]));
+ok("and it still opens the panel", byClass(tree, "pp-panel").length === 1);
+localStorageStore.delete("dsh.prompt-polish/model");
+localStorageStore.delete("dsh.prompt-polish/effort");
+
 console.log(fail.length === 0 ? "\nALL PASS" : "\nFAILURES (" + fail.length + "): " + fail.join(" | "));
 if (fail.length > 0) process.exitCode = 1;
