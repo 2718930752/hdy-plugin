@@ -1016,6 +1016,246 @@ window.__ModuleLoader__.load({
 				localStorage.setItem(HIDDEN_WORKSPACES_STORAGE_KEY, JSON.stringify([...ids]));
 			} catch {}
 		}
+		/** ---- Workspace time filter -------------------------------------------- */
+		/** Parsed positive integer, or undefined when the text is not one. */
+		function parseFilterCount(text) {
+			const trimmed = String(text).trim();
+			if (!/^\d+$/.test(trimmed)) return void 0;
+			const value = Number(trimmed);
+			return value >= 1 ? value : void 0;
+		}
+		/** Latest activity time of a session summary; creation time never counts. */
+		function sessionActivityAt(summary) {
+			if (summary === void 0) return void 0;
+			for (const value of [summary.updatedAt, summary.lastActivityAt, summary.lastMessageAt]) {
+				if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+			}
+			return void 0;
+		}
+		/** One radio row inside the filter dialog. */
+		function FilterRadio({ checked, disabled, label, onSelect }) {
+			return (0, react_jsx_runtime.jsxs)("label", {
+				style: {
+					display: "flex",
+					alignItems: "center",
+					gap: 8,
+					padding: "3px 0",
+					cursor: disabled ? "default" : "pointer",
+					opacity: disabled ? 0.5 : 1
+				},
+				children: [(0, react_jsx_runtime.jsx)("input", {
+					type: "radio",
+					checked,
+					disabled,
+					onChange: onSelect
+				}), (0, react_jsx_runtime.jsx)("span", { children: label })]
+			});
+		}
+		/** Small section heading inside the filter dialog. */
+		function FilterSection({ children }) {
+			return (0, react_jsx_runtime.jsx)("div", {
+				style: {
+					fontSize: 11.5,
+					fontWeight: 600,
+					color: "var(--dsw-alias-label-secondary)",
+					margin: "10px 0 2px"
+				},
+				children
+			});
+		}
+		/** Empty state for an active filter that matched nothing. */
+		function FilterEmptyState({ message, resetLabel, onReset }) {
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: WorkspaceBrowser_module_css_default.empty,
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "flex-start",
+					gap: 8,
+					padding: "16px 12px",
+					fontSize: 12,
+					color: "var(--dsw-alias-label-secondary)"
+				},
+				children: [(0, react_jsx_runtime.jsx)("span", { children: message }), (0, react_jsx_runtime.jsx)("button", {
+					type: "button",
+					className: WorkspaceBrowser_module_css_default.clearButton,
+					style: {
+						fontSize: 11.5,
+						padding: "0 6px",
+						height: 20,
+						borderRadius: 6,
+						border: "1px solid var(--dsw-alias-border-l2)",
+						background: "transparent",
+						color: "var(--dsw-alias-label-primary)",
+						cursor: "pointer"
+					},
+					onClick: onReset,
+					children: resetLabel
+				})]
+			});
+		}
+		/**
+		 * Time filter: one compact button in the toolbar row plus a dialog.
+		 *
+		 * The browser consumes only the derived predicate, so the list keeps its
+		 * existing grouping, ordering and empty-state behaviour.
+		 * @param t - locale seat.
+		 * @param list - session list snapshot.
+		 * @returns the control element and the derived filter.
+		 */
+		function useWorkspaceFilter(t, list) {
+			const [unit, setUnit] = (0, react.useState)("none");
+			const [countText, setCountText] = (0, react.useState)("7");
+			const [target, setTarget] = (0, react.useState)("workspace");
+			const [open, setOpen] = (0, react.useState)(false);
+			const count = parseFilterCount(countText);
+			const invalid = unit !== "none" && count === void 0;
+			const active = unit !== "none" && count !== void 0;
+			const windowMs = unit === "days" ? count * 86400000 : unit === "hours" ? count * 3600000 : 0;
+			const activeIds = (0, react.useMemo)(() => {
+				const ids = /* @__PURE__ */ new Set();
+				if (!active) return ids;
+				const from = Date.now() - windowMs;
+				for (const id of list.ids) {
+					const at = sessionActivityAt(list.byId[id]);
+					if (at !== void 0 && at >= from) ids.add(id);
+				}
+				return ids;
+			}, [
+				active,
+				windowMs,
+				list
+			]);
+			const pickUnit = (next) => {
+				setUnit(next);
+				if (next === "days") setCountText("7");
+				else if (next === "hours") setCountText("24");
+			};
+			const reset = () => {
+				setUnit("none");
+				setCountText("7");
+				setTarget("workspace");
+			};
+			const summary = active ? `${t(target === "workspace" ? "filter.workspace" : "filter.session")} · ${t(unit === "days" ? "filter.days" : "filter.hours", { n: count })}` : t("filter.label");
+			const control = (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("button", {
+				type: "button",
+				"aria-haspopup": "dialog",
+				title: t("filter.title"),
+				style: {
+					marginLeft: "auto",
+					flex: "0 0 auto",
+					maxWidth: 170,
+					height: 20,
+					padding: "0 6px",
+					borderRadius: 6,
+					border: "1px solid var(--dsw-alias-border-l2)",
+					background: active ? "var(--dsw-alias-bg-layer-2)" : "transparent",
+					color: active ? "var(--dsw-alias-label-primary)" : "var(--dsw-alias-label-secondary)",
+					fontSize: 11.5,
+					whiteSpace: "nowrap",
+					overflow: "hidden",
+					textOverflow: "ellipsis",
+					cursor: "pointer"
+				},
+				onClick: (event) => {
+					event.stopPropagation();
+					setOpen(true);
+				},
+				children: summary
+			}), (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open,
+				onClose: () => {
+					setOpen(false);
+				},
+				closeLabel: t("close"),
+				title: t("filter.title"),
+				footer: (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "outline",
+					onClick: reset,
+					children: t("filter.reset")
+				}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "primary",
+					onClick: () => {
+						setOpen(false);
+					},
+					children: t("filter.done")
+				})] }),
+				children: [(0, react_jsx_runtime.jsx)(FilterSection, { children: t("filter.timeRange") }), (0, react_jsx_runtime.jsx)(FilterRadio, {
+					checked: unit === "none",
+					label: t("filter.anyTime"),
+					onSelect: () => {
+						pickUnit("none");
+					}
+				}), (0, react_jsx_runtime.jsx)(FilterRadio, {
+					checked: unit === "days",
+					label: t("filter.daysOption"),
+					onSelect: () => {
+						pickUnit("days");
+					}
+				}), (0, react_jsx_runtime.jsx)(FilterRadio, {
+					checked: unit === "hours",
+					label: t("filter.hoursOption"),
+					onSelect: () => {
+						pickUnit("hours");
+					}
+				}), unit === "none" ? null : (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						display: "flex",
+						alignItems: "center",
+						gap: 8,
+						padding: "6px 0 2px"
+					},
+					children: [(0, react_jsx_runtime.jsx)("input", {
+						value: countText,
+						inputMode: "numeric",
+						"aria-label": t("filter.count"),
+						"data-modal-autofocus": true,
+						style: {
+							width: 72,
+							height: 26,
+							padding: "0 8px",
+							borderRadius: 6,
+							border: `1px solid ${invalid ? "var(--dsw-alias-state-error, #d9534f)" : "var(--dsw-alias-border-l2)"}`,
+							background: "transparent",
+							color: "var(--dsw-alias-label-primary)"
+						},
+						onChange: (event) => {
+							setCountText(event.target.value);
+						}
+					}), (0, react_jsx_runtime.jsx)("span", {
+						style: {
+							fontSize: 11.5,
+							color: invalid ? "var(--dsw-alias-state-error, #d9534f)" : "var(--dsw-alias-label-secondary)"
+						},
+						children: invalid ? t("filter.invalid") : t(unit === "days" ? "filter.unitDays" : "filter.unitHours")
+					})]
+				}), (0, react_jsx_runtime.jsx)(FilterSection, { children: t("filter.target") }), (0, react_jsx_runtime.jsx)(FilterRadio, {
+					checked: target === "workspace",
+					disabled: unit === "none",
+					label: t("filter.workspace"),
+					onSelect: () => {
+						setTarget("workspace");
+					}
+				}), (0, react_jsx_runtime.jsx)(FilterRadio, {
+					checked: target === "session",
+					disabled: unit === "none",
+					label: t("filter.session"),
+					onSelect: () => {
+						setTarget("session");
+					}
+				})]
+			})] });
+			return {
+				control,
+				active,
+				target,
+				unit,
+				count,
+				windowMs,
+				activeIds,
+				reset
+			};
+		}
 		/** Build one group without projecting session lineage into presentation. */
 		function buildGroup(key, workspaceId, cwd, createdAt, label, members) {
 			return {
@@ -1106,7 +1346,7 @@ window.__ModuleLoader__.load({
 		* @param view - local expansion arrays.
 		* @returns group sections in render order.
 		*/
-		function deriveGroups(list, workspaces, rowState, statuses, view, hiddenWorkspaceIds) {
+		function deriveGroups(list, workspaces, rowState, statuses, view, hiddenWorkspaceIds, keepSessionIds) {
 			const archived = new Set(rowState.archivedSessionIds);
 			const pinned = new Set(rowState.pinnedSessionIds);
 			const expandedGroups = new Set(view.expandedGroups);
@@ -1116,6 +1356,10 @@ window.__ModuleLoader__.load({
 			for (const g of groupByWorkspace(list, workspaces, archived, rowState.archivedFilter, view.ungroupedOrder)) {
 				/* Hidden Workspaces stay accounted (their sessions never leak into Ungrouped); only the section is skipped. */
 				if (g.workspaceId !== void 0 && hiddenWorkspaceIds !== void 0 && hiddenWorkspaceIds.has(g.workspaceId)) continue;
+				/* Session-target filtering keeps the workspace header, but a group left
+				 * with no visible session disappears entirely. */
+				const members = keepSessionIds === void 0 ? g.sessions : g.sessions.filter((session) => keepSessionIds.has(session.id));
+				if (keepSessionIds !== void 0 && members.length === 0) continue;
 				const expanded = expandedGroups.has(g.key);
 				groups.push({
 					key: g.key,
@@ -1123,10 +1367,10 @@ window.__ModuleLoader__.load({
 					cwd: g.cwd,
 					createdAt: g.createdAt,
 					label: g.label,
-					sessionCount: g.sessions.length,
+					sessionCount: members.length,
 					expanded,
 					containsCurrent: g.key === currentGroup,
-					sessions: expanded ? sectionMembers(g.sessions, pinned, archived).map((session) => sessionNode(session, list, statuses, pinned, archived)) : []
+					sessions: expanded ? sectionMembers(members, pinned, archived).map((session) => sessionNode(session, list, statuses, pinned, archived)) : []
 				});
 			}
 			return groups;
@@ -3045,7 +3289,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** The scrolling session tree; unmounting drops the sessions subscription and the session watermarks. */
-		function SessionTree({ list, useSessionStatus, startSession, open, workspaces, ungroupedSessionIds, rowState, onLeaveArchivedOnly, workspaceReady, animationResetKey, usePanelInfo, onRenameRequest, onDeleteRequest, onSessionRenameRequest, renderSlot, insertWorkspaceBefore, nestWorkspaces, groupExpansion, setGroupExpanded, setSessionOrder, home, t, revealSessionId, onSessionRevealed, shortcuts, hiddenWorkspaceIds, onToggleWorkspaceHidden }) {
+		function SessionTree({ list, useSessionStatus, startSession, open, workspaces, ungroupedSessionIds, rowState, onLeaveArchivedOnly, workspaceReady, animationResetKey, usePanelInfo, onRenameRequest, onDeleteRequest, onSessionRenameRequest, renderSlot, insertWorkspaceBefore, nestWorkspaces, groupExpansion, setGroupExpanded, setSessionOrder, home, t, revealSessionId, onSessionRevealed, shortcuts, hiddenWorkspaceIds, onToggleWorkspaceHidden, keepSessionIds }) {
 			const panelActive = usePanelInfo((info) => info.activePanelId !== null);
 			const statuses = useSessionStatus((s) => s);
 			const current = panelActive ? void 0 : Object.values(list.byId).find((session) => (session.retainedBy.mainView ?? 0) > 0)?.id;
@@ -3093,14 +3337,15 @@ window.__ModuleLoader__.load({
 			const groups = (0, react.useMemo)(() => deriveGroups(list, workspaces, rowState, statuses, {
 				expandedGroups,
 				ungroupedOrder: ungroupedSessionIds
-			}, hiddenWorkspaceIds), [
+			}, hiddenWorkspaceIds, keepSessionIds), [
 				list,
 				workspaces,
 				rowState,
 				statuses,
 				expandedGroups,
 				ungroupedSessionIds,
-				hiddenWorkspaceIds
+				hiddenWorkspaceIds,
+				keepSessionIds
 			]);
 			(0, react.useEffect)(() => {
 				for (let key = revealGroup; key !== void 0; key = parents.get(key)) if (groupExpansion[key] === false || key === revealGroup && groupExpansion[key] !== true) setGroupExpanded(key, true);
@@ -3571,6 +3816,8 @@ window.__ModuleLoader__.load({
 				});
 			}, []);
 			const effectiveHiddenWorkspaceIds = showHiddenWorkspaces ? void 0 : hiddenWorkspaceIds;
+			/** Time filter shared by the toolbar control and the list derivation. */
+			const workspaceFilter = useWorkspaceFilter(t, list);
 			const guardedOpen = (sessionId) => {
 				if (archivedSessionIds.includes(sessionId)) {
 					notifyArchivedNotOpenable();
@@ -3642,6 +3889,58 @@ window.__ModuleLoader__.load({
 				orderState,
 				sessionOrderByAccount
 			]);
+			/** Session id -> owning Workspace id, for the flat view's workspace-target filter. */
+			const ownerBySessionId = (0, react.useMemo)(() => {
+				const owners = /* @__PURE__ */ new Map();
+				for (const workspace of workspaces) for (const id of workspace.sessionIds) owners.set(id, workspace.workspaceId);
+				return owners;
+			}, [workspaces]);
+			/** Workspaces kept by a workspace-target filter: one active session is enough. */
+			const filterKeptWorkspaceIds = (0, react.useMemo)(() => {
+				if (!workspaceFilter.active || workspaceFilter.target !== "workspace") return void 0;
+				const kept = /* @__PURE__ */ new Set();
+				for (const workspace of orderedWorkspaces) if (workspace.sessionIds.some((id) => workspaceFilter.activeIds.has(id))) kept.add(workspace.workspaceId);
+				return kept;
+			}, [
+				orderedWorkspaces,
+				workspaceFilter
+			]);
+			const filteredFlatSessionIds = (0, react.useMemo)(() => {
+				if (!workspaceFilter.active) return orderedFlatSessionIds;
+				return orderedFlatSessionIds.filter((id) => {
+					if (workspaceFilter.target === "session") return workspaceFilter.activeIds.has(id);
+					const owner = ownerBySessionId.get(id);
+					return owner === void 0 || filterKeptWorkspaceIds.has(owner);
+				});
+			}, [
+				filterKeptWorkspaceIds,
+				orderedFlatSessionIds,
+				ownerBySessionId,
+				workspaceFilter
+			]);
+			/**
+			 * Groups the tree skips. Workspace-target filtering reuses the same skip path
+			 * as hiding, so a filtered-out Workspace stays *accounted* and its sessions
+			 * never fall through into Ungrouped.
+			 */
+			const sessionTreeHiddenIds = (0, react.useMemo)(() => {
+				if (!workspaceFilter.active || workspaceFilter.target !== "workspace") return effectiveHiddenWorkspaceIds;
+				const skipped = new Set(effectiveHiddenWorkspaceIds ?? []);
+				for (const workspace of orderedWorkspaces) if (!filterKeptWorkspaceIds.has(workspace.workspaceId)) skipped.add(workspace.workspaceId);
+				return skipped;
+			}, [
+				effectiveHiddenWorkspaceIds,
+				filterKeptWorkspaceIds,
+				orderedWorkspaces,
+				workspaceFilter
+			]);
+			/** True when the active filter leaves nothing to draw. */
+			const filterEmpty = workspaceFilter.active && (workspaceFilter.target === "session" ? filteredFlatSessionIds.length === 0 : filterKeptWorkspaceIds.size === 0 && orderedUngroupedSessionIds.length === 0);
+			/** Empty-state sentence for the active window, e.g. 「最近 7 天内没有活跃的工作区」. */
+			const filterEmptyMessage = filterEmpty ? t(workspaceFilter.target === "session" ? "filter.empty.session" : "filter.empty.workspace", {
+				n: workspaceFilter.count,
+				unit: t(workspaceFilter.unit === "days" ? "filter.unitDays" : "filter.unitHours")
+			}) : "";
 			const activeSessionOrders = (0, react.useMemo)(() => Object.fromEntries([
 				...orderedWorkspaces.map((workspace) => [workspace.workspaceId, workspace.sessionIds]),
 				["", orderedUngroupedSessionIds],
@@ -3890,9 +4189,9 @@ window.__ModuleLoader__.load({
 						children: [(0, react_jsx_runtime.jsx)("span", {
 							style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
 							children: hiddenWorkspaceIds.size === 0 ? t("hidden.none") : t("hidden.summary", { n: hiddenWorkspaceIds.size })
-						}), hiddenWorkspaceIds.size > 0 && (0, react_jsx_runtime.jsx)("button", {
+						}), workspaceFilter.control, hiddenWorkspaceIds.size > 0 && (0, react_jsx_runtime.jsx)("button", {
 							type: "button",
-							style: { marginLeft: "auto", flex: "0 0 auto", fontSize: 11.5, padding: "0 6px", height: 20, borderRadius: 6, border: "1px solid var(--dsw-alias-border-l2)", background: showHiddenWorkspaces ? "var(--dsw-alias-bg-layer-2)" : "transparent", color: "var(--dsw-alias-label-secondary)", cursor: "pointer", whiteSpace: "nowrap" },
+							style: { flex: "0 0 auto", fontSize: 11.5, padding: "0 6px", height: 20, borderRadius: 6, border: "1px solid var(--dsw-alias-border-l2)", background: showHiddenWorkspaces ? "var(--dsw-alias-bg-layer-2)" : "transparent", color: "var(--dsw-alias-label-secondary)", cursor: "pointer", whiteSpace: "nowrap" },
 							onClick: (event) => {
 								event.stopPropagation();
 								setShowHiddenWorkspaces((value) => !value);
@@ -4050,10 +4349,14 @@ window.__ModuleLoader__.load({
 							remote: remoteSearch,
 							resultLimit: searchResultLimit,
 							t
+						}) : filterEmpty ? (0, react_jsx_runtime.jsx)(FilterEmptyState, {
+							message: filterEmptyMessage,
+							resetLabel: t("filter.reset"),
+							onReset: workspaceFilter.reset
 						}) : groupBy === "flat" ? (0, react_jsx_runtime.jsx)(FlatList, {
 							usePanelInfo,
 							list,
-							sessionIds: orderedFlatSessionIds.filter((id) => !hiddenSessionIds.has(id)),
+							sessionIds: filteredFlatSessionIds.filter((id) => !hiddenSessionIds.has(id)),
 							rowState,
 							onLeaveArchivedOnly: leaveArchivedOnly,
 							workspaceReady,
@@ -4074,7 +4377,8 @@ window.__ModuleLoader__.load({
 							onSessionRenameRequest: requestSessionRename,
 							renderSlot,
 							workspaces: orderedWorkspaces,
-							hiddenWorkspaceIds: effectiveHiddenWorkspaceIds,
+							keepSessionIds: workspaceFilter.active && workspaceFilter.target === "session" ? workspaceFilter.activeIds : void 0,
+							hiddenWorkspaceIds: sessionTreeHiddenIds,
 							onToggleWorkspaceHidden: toggleWorkspaceHidden,
 							ungroupedSessionIds: orderedUngroupedSessionIds,
 							workspaceReady,
@@ -4875,6 +5179,25 @@ window.__ModuleLoader__.load({
 			"hidden.summary": "已隐藏 {n} 个工作区",
 			"hidden.showAll": "显示",
 			"hidden.hideAll": "收起",
+			"filter.label": "过滤",
+			"filter.title": "过滤条件",
+			"filter.timeRange": "时间范围",
+			"filter.anyTime": "不限时间",
+			"filter.daysOption": "最近 N 天活跃",
+			"filter.hoursOption": "最近 N 小时活跃",
+			"filter.count": "N",
+			"filter.unitDays": "天",
+			"filter.unitHours": "小时",
+			"filter.target": "过滤对象",
+			"filter.workspace": "工作区",
+			"filter.session": "会话",
+			"filter.invalid": "请输入正整数",
+			"filter.reset": "恢复不限时间",
+			"filter.done": "完成",
+			"filter.days": "最近 {n} 天",
+			"filter.hours": "最近 {n} 小时",
+			"filter.empty.workspace": "最近 {n} {unit}内没有活跃的工作区",
+			"filter.empty.session": "最近 {n} {unit}内没有活跃的会话",
 			"rename.session.title": "重命名会话",
 			"field.workspaceName": "工作区名称",
 			"field.sessionName": "会话名称",
@@ -5002,6 +5325,25 @@ window.__ModuleLoader__.load({
 			"hidden.summary": "{n} hidden workspace(s)",
 			"hidden.showAll": "Show",
 			"hidden.hideAll": "Hide",
+			"filter.label": "Filter",
+			"filter.title": "Filter",
+			"filter.timeRange": "Time range",
+			"filter.anyTime": "Any time",
+			"filter.daysOption": "Active in the last N days",
+			"filter.hoursOption": "Active in the last N hours",
+			"filter.count": "N",
+			"filter.unitDays": "days",
+			"filter.unitHours": "hours",
+			"filter.target": "Apply to",
+			"filter.workspace": "Workspaces",
+			"filter.session": "Sessions",
+			"filter.invalid": "Enter a positive integer",
+			"filter.reset": "Show all",
+			"filter.done": "Done",
+			"filter.days": "last {n} days",
+			"filter.hours": "last {n} hours",
+			"filter.empty.workspace": "No active workspaces in the {n} {unit}",
+			"filter.empty.session": "No active sessions in the {n} {unit}",
 			"rename.session.title": "Rename session",
 			"field.workspaceName": "Workspace name",
 			"field.sessionName": "Session name",
