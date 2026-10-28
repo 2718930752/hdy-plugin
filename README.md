@@ -117,6 +117,23 @@ pwsh -File ./dev.ps1
 
 The menu starts/stops/restarts that instance (default `http://127.0.0.1:43121`, its own `hdy-dev` profile sharing the desktop's model credentials), runs the 534-assertion suite, and reports status. Host changes only restart the dev instance; the main window and its session are untouched. Direct actions: `dev.ps1 -Action start|stop|restart|test|status`.
 
+## Message layout and the context fork
+
+Where the system prompt sits is configuration, not a constant. In the profile's `cordis.patch.yml`:
+
+```yaml
+- id: hdy-plugin
+  name: hdy-plugin
+  config:
+    systemPlacement: after   # default first; after = system prompt follows the user turn
+```
+
+`first` sends `system | session snapshot | draft`; `after` sends `session snapshot | draft | system`. The pi-ai adapter only promotes a **leading** system message to the real system prompt, so moving it changes what the model actually receives — that is the point of the experiment.
+
+User-prompt mode forks the conversation first: the host reads that session's derived messages (a read-only snapshot), keeps the last 12 turns and at most 12,000 characters, and puts them before the draft. The result is still only written back to the composer — never to the session. The panel shows "上下文 N 条" when a snapshot was attached, and the reason when it was not.
+
+Configuration edits reload live; host code changes need the host process restarted — see the development section above.
+
 ## Tests
 
 ```powershell

@@ -113,6 +113,23 @@ pwsh -File ./dev.ps1
 
 菜单可启动/停止/重启开发实例（默认 `http://127.0.0.1:43121`，独立 profile `hdy-dev`，与桌面端共用模型凭据），跑 534 项测试，查看状态。宿主代码改完只需重启这个开发实例，主窗口和当前会话不受影响。也可直接调用 `dev.ps1 -Action start|stop|restart|test|status`。
 
+## 消息排布与上下文 fork
+
+宿主把「系统提示词放哪」做成配置，而不是写死。在 profile 的 `cordis.patch.yml` 里：
+
+```yaml
+- id: hdy-plugin
+  name: hdy-plugin
+  config:
+    systemPlacement: after   # 默认 first；after 表示系统提示词排在用户提示词之后
+```
+
+两种排布的实际效果（`first`）：`system | 会话快照 | 草稿`；`after`：`会话快照 | 草稿 | system`。注意 pi-ai 适配器只把**首条** system 当作真正的系统提示词，挪到后面它就会作为普通轮次传下去——这本身就是要观察的差异。
+
+「用户提示词」模式会先 fork 当前会话：宿主读取该会话的派生消息（只读快照），截取最近 12 条、最多 12000 字，放在草稿之前一起发给润色模型；结果仍然只写回输入框，不写回会话。面板底部会显示「上下文 N 条」，没有拿到会话时显示原因。
+
+改配置不需要重启应用（配置级热更新）；改 `lib/index.js` 这类宿主代码则需要重启宿主进程——见上一节的独立开发实例。
+
 ## 测试
 
 ```powershell
