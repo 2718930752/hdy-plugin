@@ -708,7 +708,8 @@ const effortTarget = byClass(tree, "pp-option").find((option) => String(option.c
 effortTarget.props.onClick();
 await settle();
 tree = render();
-ok("the trigger summarises the chosen model", String(byClass(tree, "pp-trigger-label")[0]?.children.join("") ?? "").includes("qwen3.8-flash"), JSON.stringify(byClass(tree, "pp-trigger-label").map((node) => node.children.join(""))));
+ok("the trigger is icon-only", byClass(tree, "pp-trigger-label").length === 0 && byClass(tree, "pp-trigger-icon").length === 1);
+ok("the trigger names the chosen picks in its tooltip and aria-label", String(byClass(tree, "pp-trigger")[0]?.props["aria-label"] ?? "").includes("qwen3.8-flash") && String(byClass(tree, "pp-trigger")[0]?.props.title ?? "").includes("高"), JSON.stringify({ aria: byClass(tree, "pp-trigger")[0]?.props["aria-label"], title: byClass(tree, "pp-trigger")[0]?.props.title }));
 posted.length = 0;
 byClass(tree, "pp-seat")[0].props.onClick();
 await settle();
