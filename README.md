@@ -107,7 +107,8 @@ The plugin has two halves with different reload behaviour:
 | Change | How it applies |
 | --- | --- |
 | `lib/client.js` (button, panel, styles) | Save and it is live: DSH's built-in client-hmr polls the plugin's client bundle every 0.5 s and replaces that module in the browser — no restart, no page refresh |
-| Host code (`lib/index.js`, `lib/prompts.js`, `lib/processor.js`, …) | The process holding it must restart |
+| Host code (`lib/host.js`, `lib/prompts.js`, `lib/processor.js`, …) | Save and it is live: `lib/index.js` is a shell that watches `host.js`, re-imports it at a new revision and swaps the child plugin, keeping the old one mounted if the new file fails |
+| The `lib/index.js` shell itself | Needs a host restart (a cached module cannot replace the shell that caches it) |
 
 To keep your working window undisturbed, develop against a separate instance:
 

@@ -103,7 +103,8 @@ pwsh -File ./install-plugin.ps1
 | 改动 | 生效方式 |
 | --- | --- |
 | `lib/client.js`（按钮、面板、样式） | 保存即生效：DSH 内置 client-hmr 每 0.5 秒检查一次插件客户端包，改动后浏览器自动替换该插件模块，不重启、不刷新 |
-| 宿主代码（`lib/index.js`、`lib/prompts.js`、`lib/processor.js` 等） | 需要重启持有它的进程 |
+| 宿主代码（`lib/host.js`、`lib/prompts.js`、`lib/processor.js` 等） | 保存即生效：`lib/index.js` 只是外壳，监听 `host.js` 并以新 revision 重新 import，新实现加载失败时保留旧的 |
+| `lib/index.js` 外壳本身 | 需要重启宿主（模块缓存里的外壳换不掉自己） |
 
 为了不打断正在使用的主窗口，开发时用独立实例：
 
@@ -111,7 +112,7 @@ pwsh -File ./install-plugin.ps1
 pwsh -File ./dev.ps1
 ```
 
-菜单可启动/停止/重启开发实例（默认 `http://127.0.0.1:43121`，独立 profile `hdy-dev`，与桌面端共用模型凭据），跑 534 项测试，查看状态。宿主代码改完只需重启这个开发实例，主窗口和当前会话不受影响。也可直接调用 `dev.ps1 -Action start|stop|restart|test|status`。
+菜单可启动/停止/重启开发实例（默认 `http://127.0.0.1:43121`，独立 profile `hdy-dev`，与桌面端共用模型凭据），跑 534 项测试，查看状态。开发实例更适合「换 profile / 换依赖 / 看日志」这类重实验；日常改代码两个实例都能热更。也可直接调用 `dev.ps1 -Action start|stop|restart|test|status`。
 
 ## 消息排布与上下文 fork
 
@@ -128,7 +129,7 @@ pwsh -File ./dev.ps1
 
 「用户提示词」模式会先 fork 当前会话：宿主读取该会话的派生消息（只读快照），截取最近 12 条、最多 12000 字，放在草稿之前一起发给润色模型；结果仍然只写回输入框，不写回会话。面板底部会显示「上下文 N 条」，没有拿到会话时显示原因。
 
-改配置不需要重启应用（配置级热更新）；改 `lib/index.js` 这类宿主代码则需要重启宿主进程——见上一节的独立开发实例。
+改配置不需要重启应用（配置级热更新）；改 `lib/host.js` 这类宿主代码也不需要重启（外壳负责重新加载）；只有 `lib/index.js` 外壳本身变化时才需要重启宿主。
 
 ## 测试
 

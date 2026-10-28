@@ -18,7 +18,9 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 
 const PROFILE = fileURLToPath(new URL(".", import.meta.url));
 const mod = await import(pathToFileURL(`${PROFILE}/lib/index.js`).href);
-const { apply, inject, name, OPTIMIZE_ROUTE, MODELS_ROUTE, EXTRACT_ROUTE } = mod;
+const { apply, inject, name, ready } = mod;
+/** The route constants live with the implementation the shell mounts. */
+const { OPTIMIZE_ROUTE, MODELS_ROUTE, EXTRACT_ROUTE } = await import(pathToFileURL(`${PROFILE}/lib/host.js`).href);
 const { getTemplate, registerTemplate, TEMPLATES } = await import(pathToFileURL(`${PROFILE}/lib/prompts.js`).href);
 
 const fail = [];
@@ -104,11 +106,13 @@ const ctx = {
 	}
 };
 apply(ctx);
+/** The shell mounts the implementation asynchronously; wait for it. */
+await ready;
 
 const optimize = routes[OPTIMIZE_ROUTE];
 const modelsRoute = routes[MODELS_ROUTE];
 const extract = routes[EXTRACT_ROUTE];
-ok("apply registers all three routes", effects.length === 3 && optimize && modelsRoute && extract, effects);
+ok("apply registers all three routes", effects.filter((effect) => !String(effect).includes("host shell")).length === 3 && optimize && modelsRoute && extract, effects);
 ok("optimize route is exact POST", optimize?.kind === "exact" && optimize?.path === OPTIMIZE_ROUTE, optimize?.path);
 ok("models route is exact GET", modelsRoute?.kind === "exact" && modelsRoute?.path === MODELS_ROUTE, modelsRoute?.path);
 ok("extract route is exact POST", extract?.kind === "exact" && extract?.path === EXTRACT_ROUTE, extract?.path);
