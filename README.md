@@ -131,6 +131,8 @@ Where the system prompt sits is configuration, not a constant. In the profile's 
 
 `first` sends `system | session snapshot | draft`; `after` sends `session snapshot | draft | system`. The pi-ai adapter only promotes a **leading** system message to the real system prompt, so moving it changes what the model actually receives — that is the point of the experiment.
 
+Panel tab order is a product decision, not registry order: **用户提示词 → 系统提示词 → 迭代优化**, ordered by the host in `GET /prompt-polish/models` and rendered verbatim by the panel.
+
 User-prompt mode forks the conversation first: the host reads that session's derived messages (a read-only snapshot), keeps the last 12 turns and at most 12,000 characters, and puts them before the draft. The result is still only written back to the composer — never to the session. The panel shows "上下文 N 条" when a snapshot was attached, and the reason when it was not.
 
 Configuration edits reload live; host implementations reload through the shell; only a change to `lib/index.js` itself needs a host restart — see the development section above.

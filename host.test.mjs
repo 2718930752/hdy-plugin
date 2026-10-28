@@ -376,7 +376,9 @@ const listed = JSON.parse(res.body());
 ok("it reports the current selection", listed.current?.model === "qwen3.8-flash", listed.current);
 ok("one failing provider does not empty the picker", listed.groups.length === 1 && listed.groups[0].provider === "amazon-bedrock", listed.groups);
 ok("it lists both models", listed.groups[0].models.map((m) => m.id).join(",") === "qwen3.8-flash,wan2.7-image");
-ok("it exposes the optimizationMode axis", listed.modes.map((m) => m.id).join(",") === "system,user,iterate", JSON.stringify(listed.modes));
+/** Panel order is deliberate: 用户提示词 first, 系统提示词 second, 迭代优化 last. */
+ok("it exposes the optimizationMode axis in panel order", listed.modes.map((m) => m.id).join(",") === "user,system,iterate", JSON.stringify(listed.modes));
+ok("every catalog mode is still one of the registry's own", listed.modes.every((mode) => Object.values(TEMPLATES).some((template) => template.optimizationMode === mode.id)));
 ok("it advertises the extraction call", listed.extraction === true, listed.extraction);
 ok("templates carry only the axis members", listed.templates.map((t) => t.id).join(",") === "general-optimize,user-prompt-basic,user-prompt-professional,iterate,analytical-optimize,soul-hermes-compose,soul-openclaw-compose,user-prompt-planning,soul-iterate", listed.templates.map((t) => t.id).join(","));
 ok("the extraction template is not offered as a mode", !listed.templates.some((t) => t.id === "variable-extraction"));
