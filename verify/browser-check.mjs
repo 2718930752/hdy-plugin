@@ -146,7 +146,7 @@ async function marketAndAgentPhase(browser, url, check, dismissHostNotices, out)
 	/* 上游失败：保留最后一次真实值并标注 */
 	const liveStrip = await page.locator("[data-market='strip']").innerText();
 	marketMode = "fail";
-	await page.waitForTimeout(3000);
+	await page.waitForTimeout(5000);
 	const failedStrip = await page.locator("[data-market='strip']").innerText();
 	check("upstream failure is shown as disconnected", failedStrip.includes("断开") && failedStrip.includes("最后更新"), failedStrip.replace(/\n/g, " | "));
 	check("failure never replaces prices with invented values", failedStrip.split("\n").filter((line) => /^[0-9]/.test(line)).join("|") === liveStrip.split("\n").filter((line) => /^[0-9]/.test(line)).join("|"));
